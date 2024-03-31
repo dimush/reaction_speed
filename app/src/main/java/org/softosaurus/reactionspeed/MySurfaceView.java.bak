@@ -1,0 +1,801 @@
+package org.softosaurus.reactionspeed;
+
+import java.util.Vector;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Paint.Align;
+import android.graphics.Typeface;
+import android.media.AudioManager;
+import android.media.SoundPool;
+import android.os.Vibrator;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.View;
+import android.view.View.OnTouchListener;
+
+public class MySurfaceView extends android.view.SurfaceView implements SurfaceHolder.Callback, Runnable, OnTouchListener {
+	private SurfaceHolder sh;
+	private Bitmap bg_image;
+	private Context context;	
+	private SoundPool sp;
+	private AudioManager audio;
+	private Paint p = new Paint();
+	private Paint p_frame = new Paint();
+	private int target_r, target_x, target_y;
+	private int game_state = -2;
+	private int w,h;
+	private int finger_r, finger_x = 0, finger_y;
+	private int finger_loc_x, finger_loc_y;
+	private boolean finger_locked = false;
+	private long pause, start_time;
+	private int rt_count;
+	private float rt_av, rt_last; 
+	public int[] best_res = new int[10];
+	public int best_res_size = 0;
+	public Vector<Integer> results_vector = new Vector<Integer>();
+	private int resp_delay = 10;
+	private int fs;
+	private long last_touch_time;	
+	private float rt_sko;
+	private float[] rt_array = new float[10];
+	private boolean[] rt_flags = new boolean[10];
+	private boolean redraw_flg = false;	
+	private ObjectState t10 = new ObjectState();
+	private ObjectState val = new ObjectState();
+	private Bitmap plita_bmp_orig;
+	private result res = new result();
+	private Bitmap trava_bmp;
+	// Sounds
+	private static int SOUND_ID_DRIP = 0;
+	private static int SOUND_ID_TOMB = 1;
+	private static int SOUND_ID_STONE1 = 2;
+	private static int SOUND_ID_STONE2 = 3;
+	private static int SOUND_ID_METAL = 4;
+	private static int SOUND_ID_MAX = 5;
+	private int[] soundID = new int[SOUND_ID_MAX];
+	private Vibrator v;
+	
+	public boolean useTargetSounds = true;
+	public boolean useStoneSounds = true;
+	public boolean useVibrator = true;
+	
+	public MySurfaceView(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		p_frame.setStyle(Paint.Style.STROKE);
+		sh = getHolder();
+		sh.addCallback(this);	
+		this.context = context;		
+		this.setOnTouchListener(this);
+		v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+		/**
+		 * Sounds
+		 */
+		sp = new SoundPool(4, android.media.AudioManager.STREAM_MUSIC, 0);				
+		audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);	
+		soundID[SOUND_ID_DRIP] = sp.load(context, R.raw.drip, 1);
+		soundID[SOUND_ID_TOMB] = sp.load(context, R.raw.tomb, 1);
+		soundID[SOUND_ID_STONE1] = sp.load(context, R.raw.stone1, 1);
+		soundID[SOUND_ID_STONE2] = sp.load(context, R.raw.stone2, 1);
+		soundID[SOUND_ID_METAL] = sp.load(context, R.raw.metal, 1);
+		/**
+		 * Bitmaps
+		 */
+		trava_bmp = BitmapFactory.decodeResource(context.getResources(), R.drawable.trava);
+		plita_bmp_orig = BitmapFactory.decodeResource(context.getResources(), R.drawable.plita);
+		t10.object_bmp = Bitmap.createBitmap(plita_bmp_orig.getWidth(),plita_bmp_orig.getHeight(),plita_bmp_orig.getConfig());
+		res.plita_result_bmp = Bitmap.createBitmap(plita_bmp_orig.getWidth(),plita_bmp_orig.getHeight(),plita_bmp_orig.getConfig());
+		val.object_bmp = BitmapFactory.decodeResource(context.getResources(), R.drawable.valun1);
+		val.state = 0;
+		p.setARGB(255, 255, 255, 255);
+	}
+	
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+			int height) {
+		// TODO Auto-generated method stub
+		redrawMe();
+	}
+
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	void redrawMe() {
+		redraw_flg = true;
+	}
+	
+	public int getTop10_state() {
+		return t10.state;
+	}
+
+	public void setTop10_state(int top10_state) {
+		this.t10.state = top10_state;
+	}
+	
+	public void clearBestResults() {
+		best_res_size = 0;
+		for(int i = 0; i < best_res.length; i++) {
+			best_res[i] = 0;
+		}	
+		results_vector.clear();
+		if(stat_state != 3) stat_state = 0; 
+	}
+
+	@Override
+	public void run() {
+		while(true) {	
+			if(redraw_flg) {
+				redraw_flg = false;
+				Canvas can = null;
+				try {
+					can = sh.lockCanvas();
+					myDraw(can);
+				}
+				catch(Exception e) {
+					// I don't know why...
+				}
+				finally {
+					if(can != null) {
+						sh.unlockCanvasAndPost(can);
+					}
+				}
+			}
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			/**
+			 * State Machine for Valun
+			 */
+			switch(val.state) {
+				case 0: {
+					if(bg_image != null) {
+						val.position = h * 2;
+						if(game_state == -2) {
+							val.state = 1;
+							if(useStoneSounds)
+								sp.play(soundID[SOUND_ID_TOMB], 0.7f, 0.7f, 1, 0, 1f);
+						}
+					}
+					break;
+				}
+				case 1: { // валун поехал вверх
+					val.position -= 16;
+					redrawMe();
+					if(val.position <= h) val.state = 2;
+					break;
+				}
+				case 2: { // валун показывает инструкцию в начале тестирования
+					if(t10.state == 3 || t10.state == 4) {
+						val.state = 3;
+						if(useStoneSounds)
+							sp.play(soundID[SOUND_ID_TOMB], 0.7f, 0.7f, 1, 0, 1f);
+					}
+					break;
+				}
+				case 3: { // валун уезжает вниз
+					val.position += 16;
+					redrawMe();
+					if(val.position >= h * 2) val.state = 4;
+					break;
+				}
+				case 4: { // валун спрятан
+					if(t10.state == 1 || t10.state == 2) {
+						val.state = 5;
+						if(useStoneSounds)
+							sp.play(soundID[SOUND_ID_TOMB], 0.7f, 0.7f, 1, 0, 1f);
+					}
+					break;
+				}
+				case 5: { // валун поехал вверх
+					val.position -= 16;
+					redrawMe();
+					if(val.position <= h) val.state = 6;
+					break;
+				}
+				case 6: { // валун показывает результаты тестирования
+					if(t10.state == 3 || t10.state == 4) {
+						val.state = 7;
+						if(useStoneSounds)
+							sp.play(soundID[SOUND_ID_TOMB], 0.7f, 0.7f, 1, 0, 1f);
+					}
+					break;
+				}
+				case 7: { // валун уезжает вниз
+					val.position += 16;
+					redrawMe();
+					if(val.position >= h * 2) val.state = 4;
+					break;
+				}
+			}
+			/**
+			 * Graphical statistics
+			 */
+			//if(ReactionSpeedActivity.RELEASE) {
+				if(stat_state < 2) redrawMe();
+			//}
+			/**
+			 * State Machine for top 10 results draw 
+			 */		
+			switch(t10.state) {
+				case 0: {
+					t10.position = -t10.object_bmp.getWidth();	
+					if(bg_image != null) {	
+						t10.state = 1;
+						p.setARGB(255, 254, 223, 107);						
+						p.setTextSkewX((float) -0.45);
+						p.setFakeBoldText(true);									
+						Canvas plita_top10_can = new Canvas(t10.object_bmp);
+						plita_top10_can.drawBitmap(plita_bmp_orig, 0, 0, p);
+						plita_top10_can.drawText("Top 10:", 2*fs+1, 3*fs+1, p);				
+						for(int i = 0; i < Math.min(10, best_res_size); i++) {
+							plita_top10_can.drawText(String.format("%d) %d ms", i + 1, best_res[i]), 2*fs+1, 4*fs + i * fs+1, p);							
+						}						
+						p.setFakeBoldText(false);
+						p.setARGB(255, 0, 0, 0);
+						plita_top10_can.drawText("Top 10:", 2*fs, 3*fs, p);
+						for(int i = 0; i < Math.min(10, best_res_size); i++) {
+							plita_top10_can.drawText(String.format("%d) %d ms", i + 1, best_res[i]), 2*fs, 4*fs + i * fs, p);
+						}
+						p.setTextSkewX((float) 0);
+						if(useStoneSounds)
+							sp.play(soundID[SOUND_ID_STONE1], 0.7f, 0.7f, 1, 0, 1f);
+					}
+					break;
+				}
+				case 1: {
+					t10.position += 16;
+					redrawMe();
+					if(t10.position >= w - t10.object_bmp.getWidth())
+						t10.state = 2;
+					break;
+				}
+				case 3: {
+					t10.position -= 16;
+					redrawMe();
+					if(t10.position <= -t10.object_bmp.getWidth())
+						t10.state = 4;
+					break;
+				}
+			}
+			/**
+			 * State Machine for actual results draw 
+			 */		
+			switch(res.state) {
+				case -1: {
+					if(bg_image != null) {
+						res.state = 1;
+						p.setARGB(255, 254, 223, 107);						
+						p.setTextSkewX((float) -0.45);
+						p.setFakeBoldText(true);									
+						Canvas plita_result_can = new Canvas(res.plita_result_bmp);
+						plita_result_can.drawBitmap(plita_bmp_orig, 0, 0, p);
+						plita_result_can.drawText("Now:", 2*fs+1, 3*fs+1, p);				
+						for(int i = 0; i < rt_count; i++) {
+							if(game_state == 3) {
+								if(rt_flags[i] == false) {
+									p.setColor(Color.RED);						
+								}
+							}
+							plita_result_can.drawText(String.format("%d) %d ms", i + 1, (int)rt_array[i]), 2*fs+1, 4*fs + i * fs+1, p);
+							p.setARGB(255, 254, 223, 107);
+						}						
+						p.setFakeBoldText(false);
+						p.setARGB(255, 0, 0, 0);
+						plita_result_can.drawText("Now:", 2*fs, 3*fs, p);
+						for(int i = 0; i < rt_count; i++) {
+							if(game_state == 3) {
+								if(rt_flags[i] == false) {
+									//p.setColor(Color.RED);						
+								}
+							}
+							plita_result_can.drawText(String.format("%d) %d ms", i + 1, (int)rt_array[i]), 2*fs, 4*fs + i * fs, p);
+							//p.setARGB(255, 167, 123, 50);
+						}
+						p.setTextSkewX((float) 0);
+						if(res.plita_pos > w * 2 - res.plita_result_bmp.getWidth()) {
+							if(useStoneSounds)
+								sp.play(soundID[SOUND_ID_STONE2], 0.7f, 0.7f, 1, 0, 1f);
+						}
+						redrawMe();
+					}
+					break;
+				}
+				case 0: {
+					res.plita_pos = w * 2;
+					if(game_state == 0) res.state = -1;
+					break;
+				}
+				case 1: {					
+					redrawMe();
+					if(res.plita_pos <= w * 2 - res.plita_result_bmp.getWidth())
+						res.state = 2;
+					else
+						res.plita_pos -= 16;
+					break;
+				}
+				case 3: {
+					res.plita_pos += 16;
+					redrawMe();
+					if(res.plita_pos >= 2 * w)
+						res.state = 4;
+					break;
+				}
+				case 4: {
+					if(game_state == 0) res.state = -1;
+					break;
+				}
+			}
+			/**
+			 * State Machine for Game Flow
+			 */
+			switch(game_state) {
+				case(-2): {
+					if(t10.state == 4) t10.state = 0;
+					if(resp_delay != 0) resp_delay--;
+					if(resp_delay == 0 && finger_x != 0) game_state = -1; else finger_x = 0;
+					break;
+				}
+				case(-1): { // убираем статистику
+					rt_count = 0;
+					rt_av = 0;					
+					game_state = 0;
+					t10.state = 3;					
+					if(useStoneSounds)
+						sp.play(soundID[SOUND_ID_STONE1], 0.7f, 0.7f, 1, 0, 1f);
+					res.state = 3;
+					if(useStoneSounds)
+						sp.play(soundID[SOUND_ID_STONE2], 0.7f, 0.7f, 1, 0, 1f);
+					stat_state = 3;
+					break;
+				}
+				case(0): { // генерация новых координат цели
+					if(t10.state == 4) {
+						target_x = (int) (Math.random() * (w - target_r) * 2 + target_r);
+						target_y = (int) (Math.random() * (h - target_r) * 2 + target_r);
+						if(Math.abs(target_x - finger_x) > 2 * (target_r + finger_r) || Math.abs(target_y - finger_y) > 2 * (target_r + finger_r)) {
+							game_state = 1;
+							start_time = System.currentTimeMillis();
+							pause = (long) (500 + Math.random() * 3000);						
+						}
+					}
+					break;
+				}	
+				case(1): { // рисуем цель
+					if(System.currentTimeMillis() - start_time > pause) {
+						game_state = 2;
+						if(useTargetSounds)
+							sp.play(soundID[SOUND_ID_METAL], 0.1f, 0.1f, 1, 0, 1f);
+						if(useVibrator)
+							v.vibrate(70);
+						redrawMe();
+						start_time = System.currentTimeMillis();
+					}
+					break;
+				}
+				case(2): { // обработка нажатия на экран
+					if(Math.abs(target_x - finger_x) < (target_r + finger_r) && Math.abs(target_y - finger_y) < (target_r + finger_r)) {					
+						if(useTargetSounds)
+							sp.play(soundID[SOUND_ID_DRIP], 0.7f, 0.7f, 1, 0, 1f);
+						rt_last = last_touch_time - start_time;
+						rt_array[rt_count] = rt_last;
+						rt_count++;
+						rt_av += rt_last;	
+						res.state = -1;
+						if(rt_count < 10) {
+							game_state = 0;
+							redrawMe();
+						} 
+						else {
+							rt_av /= rt_count;
+							game_state = 3;
+							redrawMe();
+							float rt_sum2 = 0;
+							for(int i = 0; i < 10; i++) {
+								rt_sum2 += (rt_array[i] - rt_av) * (rt_array[i] - rt_av); 
+							}
+							rt_sko = (float) Math.sqrt(rt_sum2 / rt_count);
+							float tmp_sum = 0;
+							rt_count = 0;
+							for(int i = 0; i < 10; i++) {
+								if((rt_array[i] - rt_av) < rt_sko) {
+									tmp_sum += rt_array[i];
+									rt_flags[i] = true;
+									rt_count++;
+								}
+								else {
+									rt_flags[i] = false;
+								}
+							}
+							if(rt_count > 0) {
+								// переходим к показу статистики
+								stat_state = 0;
+								rt_av = tmp_sum / rt_count;						
+								int last_res = (int)(rt_av);
+								results_vector.add(last_res);
+								for(int i = 0; i < 10; i++) {
+									if(best_res[i] >= last_res || best_res[i] == 0) {
+										for(int j = 9; j > i; j--) {
+											best_res[j] = best_res[j - 1];
+										}
+										best_res[i] = last_res;
+										break;
+									}
+								}
+								if(best_res_size < 10) best_res_size++;						
+								finger_x = 0;
+								resp_delay = 10;
+								t10.state = 0;
+								res.state = -1;
+							}
+							else {
+								game_state = -1;
+							}
+						}
+					}
+					break;
+				}
+				case(3): {
+					if(t10.state == 4) t10.state = 0;
+					if(resp_delay != 0) resp_delay--;
+					if(resp_delay == 0 && finger_x != 0) game_state = -1; else finger_x = 0;
+					break;
+				}
+			}
+			
+		}
+	}
+	
+	private void drawBackGround() {
+		/*
+		 * Prepare BG Canvas
+		 */
+		Canvas bg_can = new Canvas(bg_image);
+		w = bg_can.getWidth()/2;
+		h = bg_can.getHeight()/2;
+		fs = w / 10;
+		p.setTextSize(fs);
+		target_r = h/8;	
+		finger_r = target_r;
+		p.setARGB(255, 255, 255, 255);
+		for(int j = -trava_bmp.getHeight()/2; j < h*2; j += trava_bmp.getHeight()/2) {
+			for(int i = -trava_bmp.getWidth()/2; i < w * 2; i += trava_bmp.getWidth()/2) {
+				bg_can.drawBitmap(trava_bmp, i + (float)Math.random()*trava_bmp.getWidth()/2, j + (float)Math.random()*trava_bmp.getHeight()/2, p);
+			}
+		}
+		bg_can.translate(bg_can.getWidth(), 0);
+		bg_can.rotate(90f);
+	}
+		
+	public static Paint getFillTextPaint(float f, int color, float textSize) {
+        Paint textPaint = new Paint();
+        textPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setStyle(Paint.Style.FILL);
+        textPaint.setColor(color);
+        textPaint.setTextSize(textSize);
+        textPaint.setStrokeWidth(f);
+        textPaint.setShadowLayer(0.002f, 0.0f, 0.0f, 0xFF000000);
+        textPaint.setTypeface(Typeface.SANS_SERIF);
+        return textPaint;
+    }
+	
+	public static Path getTextPath(float x, float y, float len) {
+		Path textPath = new Path();
+		textPath.moveTo(x, y);
+		//textPath.cubicTo(len/4, -10, len/2, 20, len, -20);
+		textPath.lineTo(len, len);
+		textPath.close();
+		return textPath;
+	}
+	
+	/**
+	 * Вычисляет величину шага шкалы.
+	 * @param min		начало шкалы
+	 * @param max		конец шкалы
+	 * @param nsteps	число линеек на шкале
+	 * @return			величина шага
+	 */
+	private int calcStep(int min, int max, int nsteps) {
+		// выбираем минимальный шаг
+		int step = (max - min) / nsteps;
+		if((max - min) % nsteps != 0) step++;
+		int temp = 1;
+		int mul = 0;
+		while(temp < step) {
+			switch(mul) {
+				case 0: temp *= 2; break;					// 1 -> 2
+				case 1: temp = temp * 2 + temp / 2; break;	// 2 -> 5
+				case 2: temp *= 2; break;					// 5 -> 10	50 -> 100	500 -> 1000	...
+				case 3: temp *= 2; break;					// 10 -> 20 100 -> 200	...
+				case 4: temp = temp + temp / 4; break;		// 20 -> 25 200 -> 250  ...
+				case 5: temp *= 2; break;					// 25 -> 50 250 -> 500	...
+			}
+			mul++; if(mul > 5) mul = 2;				
+		}
+		return temp;		
+	}
+	
+	/**
+	 * Draw graphical long term statistics.
+	 * @param can
+	 */
+	private int stat_state = 0;
+	private int stat_width;
+	private int stat_height;
+	private int stat_cur_width;
+	private int stat_cur_height;
+	private int stat_dw, stat_dh;
+	private int stat_w_center, stat_h_center;
+	private void drawStat(Canvas can) {	
+		if(stat_state == 3) return;
+		//if(!ReactionSpeedActivity.RELEASE) return;
+		stat_height = h/4;
+		stat_width = 2 * w - w / 4;
+		stat_w_center = w;
+		stat_h_center = 2 * h - stat_height / 2 - stat_height / 8;
+		switch(stat_state) {
+			case 0: { // start draw small statistics
+				stat_cur_width = stat_width / 4;
+				stat_cur_height = stat_height / 4;
+				stat_state = 1;
+				break;
+			}
+			case 1: { // dynamic open window
+				int err_w = (stat_width - stat_cur_width) / 3;
+				int err_h = (stat_height - stat_cur_height) / 3;
+				stat_dw += err_w;
+				stat_dh += err_h;
+				stat_cur_width += stat_dw + err_w;
+				stat_cur_height += stat_dh + err_h;
+				if(Math.abs(stat_dw) < 2 && Math.abs(stat_dh) < 2 && Math.abs(err_w) < 2 && Math.abs(err_h) < 2) stat_state = 2;
+				break;
+			}
+		}
+		p.setARGB(255, 225, 198, 153);
+		// рисуем поле графика
+		if(results_vector.size() > 0) {
+			can.drawRect(stat_w_center - stat_cur_width/2, stat_h_center - stat_cur_height/2,
+					     stat_w_center + stat_cur_width/2, stat_h_center + stat_cur_height/2, p);
+		}
+		int gap_h = (int) (p_frame.getTextSize() * 2); // дополнительный зазор по Y
+		int gap_w = (int) (p_frame.getTextSize() * 3); // дополнительный зазор по X
+		int real_h = stat_cur_height - gap_h; // истинная высота графика
+		int real_w = stat_cur_width - gap_w; // истинная ширина графика
+		int bottom = stat_h_center + real_h/2 - gap_h / 4; // нижняя граница графика
+		int left = stat_w_center - real_w/2 + gap_w / 3; // левая граница графика
+		// рисуем рамку графика
+		p_frame.setARGB(255, 0, 0, 0);
+		//p_frame.setStrokeWidth(1.0f);
+		if(results_vector.size() > 0) {
+			can.drawRect(left, bottom - real_h, left + real_w, bottom, p_frame);
+		}
+		p.setARGB(255, 255, 0, 0);
+		if(results_vector.size() > 1) {
+			int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+			int y_min = (Integer)results_vector.elementAt(0); // минимум по Y			
+			int y_max = y_min;	// максимум по Y
+			
+			for(int i = 0; i < results_vector.size(); i++) {
+				int res = (Integer)results_vector.elementAt(i);
+				if(y_min > res) y_min = res;
+				if(y_max < res) y_max = res;
+			}
+			// выбираем минимум
+			int temp = 0;
+			while(y_min > 10) {
+				y_min /= 10;
+				temp++;
+			}
+			for(int i = 0; i < temp; i++)
+				y_min *= 10;
+			int step_y = calcStep(y_min, y_max, 5);
+			// выбираем максимум 
+			y_max = y_min + 5 * step_y;
+			// рисуем сетку по вертикали
+			for(int i = 1; i <= 4; i++) {
+				can.drawLine(left, bottom - i*real_h/5, left + real_w, bottom - i*real_h/5, p_frame);
+			}
+			// рисуем сетку по горизонтали
+			if(results_vector.size() > 1) {
+				int step_x = calcStep(0, results_vector.size() - 1, 10);				
+				for(int i = step_x - 1; i < results_vector.size(); i += step_x) {
+					x1 = left + i * real_w / (results_vector.size() - 1);
+					can.drawLine(x1, bottom, x1, bottom - real_h, p_frame);
+					// подписываем горизонтальную ось
+					String txt = "" + (i + 1);
+					can.drawText(txt, x1 - p_frame.measureText(txt) / 2, bottom + p_frame.getTextSize(), p_frame);
+				}
+			}
+			// подписываем вертикальную ось
+			for(int i = 0; i <= 5; i++) {
+				can.drawText("" + (y_min + i*(y_max - y_min)/5), stat_w_center - stat_cur_width/2, bottom - i*real_h/5 + p_frame.getTextSize()/2, p_frame);
+				//can.drawText("" + y_min, stat_w_center - stat_cur_width/2, bottom, p_frame);
+			}			
+			p.setAntiAlias(true);
+			p.setStrokeWidth(4.0f);
+			for(int i = 0; i < results_vector.size(); i++) {
+				x2 =  i * real_w / (results_vector.size() - 1) + left;
+				y2 = (Integer)results_vector.elementAt(i);
+				y2 = (y2 - y_min) * real_h / (y_min - y_max) + bottom;
+				if(i > 0) {
+					can.drawLine(x1, y1, x2, y2, p);
+				}
+				x1 = x2;
+				y1 = y2;
+			}
+		}
+		else if(results_vector.size() == 1) {
+			// рисуем шкалу для одной точки - пересечение
+			int x1 = left + real_w / 2;
+			int y1 = bottom - real_h / 2;
+			can.drawLine(x1, bottom, x1, bottom - real_h, p_frame);
+			can.drawLine(left, y1, left + real_w, y1, p_frame);
+			// подписываем оси
+			String txt = "1";
+			can.drawText(txt, x1 - p_frame.measureText(txt) / 2, bottom + p_frame.getTextSize(), p_frame);
+			txt = "" + (Integer)results_vector.elementAt(0);
+			can.drawText(txt, stat_w_center - stat_cur_width/2, y1 + p_frame.getTextSize()/2, p_frame);
+			can.drawCircle(x1, y1, 5, p);
+		}
+	}
+	
+	public void myDraw(Canvas can) {
+		if(can == null) return;				
+		if(bg_image == null || can.getWidth() != bg_image.getWidth() || can.getHeight() != bg_image.getHeight()) {			
+			bg_image = Bitmap.createBitmap(can.getWidth(), can.getHeight(), Bitmap.Config.ARGB_8888);
+			drawBackGround();
+		}	
+		/**
+		 * Background
+		 */		
+		can.drawBitmap(bg_image, new Rect(0, 0, bg_image.getWidth(), bg_image.getHeight()), 
+				new Rect(0, 0, can.getWidth(), can.getHeight()), p);
+		/**
+		 * Valun
+		 */
+		switch(val.state) {
+			case(1): 
+			case(2):
+			case(3): {
+				can.drawBitmap(val.object_bmp, w-val.object_bmp.getWidth()/2, val.position, p);
+				Paint yellowPaint = getFillTextPaint(0.01f, 0xFFffea3e, 0.065f);
+				String txt1 = "Measure Your Reaction Time";
+				String txt2 = "Press the red buttons";
+				String txt3 = "Touch the screen for start";
+				float text_len = p.measureText(txt2);
+				if(p.measureText(txt1) > p.measureText(txt2)) 
+					text_len = (int) p.measureText(txt1);
+				if(p.measureText(txt3) > text_len) 
+					text_len = (int) p.measureText(txt3);
+				text_len /= 2;
+				//Path textPath = getTextPath(w, val.position + h/4, w);	
+			    //can.drawTextOnPath(txt1, textPath, 0, 0, yellowPaint);
+				p.setARGB(100, 255, 255, 255);
+				can.drawRoundRect(new RectF(w - text_len, val.position + h/4 - fs, w + text_len, val.position + h/4 + 2 * fs + fs/2), 15, 15, p);
+				p.setARGB(255, 0, 0, 0);
+				p.setTextAlign(Align.CENTER);
+				can.drawText(txt1, w, val.position + h/4, p);
+				can.drawText(txt2, w, val.position + h/4 + fs, p);
+				can.drawText(txt3, w, val.position + h/4 + 2 * fs, p);
+				p.setTextAlign(Align.LEFT);
+				break;
+			}
+			case(5):
+			case(6):
+			case(7): {
+				can.drawBitmap(val.object_bmp, w-val.object_bmp.getWidth()/2, val.position, p);
+				String txt1 = String.format("Reaction Time: %d ms", (int)(rt_av));
+				String txt2 = "Touch the screen for repeate";
+				float text_len = p.measureText(txt2);				
+				if(p.measureText(txt1) > p.measureText(txt2)) 
+					text_len = (int) p.measureText(txt1);
+				text_len /= 2;
+				p.setARGB(100, 255, 255, 255);
+				can.drawRoundRect(new RectF(w - text_len, val.position + h/4 - fs, w + text_len, val.position + h/4 + fs + fs/2), 15, 15, p);
+				p.setARGB(255, 0, 0, 0);
+				p.setTextAlign(Align.CENTER);
+				can.drawText(txt1, w, val.position + h/4, p);
+				can.drawText(txt2, w, val.position + h/4 + fs, p);
+				p.setTextAlign(Align.LEFT);
+				break;
+			}
+		}
+		/**
+		 * Top 10 results draw 
+		 */		
+		switch(t10.state) {
+			case 1:
+			case 2:
+			case 3: {
+				can.drawBitmap(t10.object_bmp, t10.position, 0, p);		
+				break;
+			}
+		}
+		/**
+		 * Actual results draw 
+		 */		
+		switch(res.state) {
+			case -1:
+			case 1:
+			case 2:
+			case 3: {
+				can.drawBitmap(res.plita_result_bmp, res.plita_pos, 0, p);				
+				break;
+			}
+		}
+		/**
+		 * Graphical statistics draw
+		 */
+		drawStat(can);
+		p.setARGB(255, 255, 255, 255);
+		if(game_state > -2 && game_state < 4) {
+			//p.setTextAlign(Align.CENTER);
+			//can.drawText(String.format("actual result: %d ms", (int)(rt_last)), w, 2 * h - fs, p);
+			//p.setTextAlign(Align.LEFT);
+			if(game_state == 3) rt_count = 10;
+			//can.drawText("now:", 12*fs, 1*fs, p);
+			
+		}
+		/**
+		 * Draw Target
+		 */
+		if(game_state == 2) {
+			p.setARGB(50, 0, 0, 0);
+			can.drawCircle(target_x, target_y + 30, target_r, p);
+			p.setARGB(255, 255, 0, 0);
+			can.drawCircle(target_x, target_y, target_r, p);
+		}
+		//p.setARGB(255, 255, 128, 40);
+		//can.drawCircle(finger_x, finger_y, finger_r, p);		
+		can.translate(can.getWidth(), 0);
+		can.rotate(90f);
+	}
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {		
+		/**
+		 * Attention!
+		 * Display is not rotated, but the coordinate system is!
+		 * So getY() should be used as getX() and vice versa 
+		 */
+		switch(event.getAction()) {
+			case MotionEvent.ACTION_DOWN: {
+				finger_x = (int) event.getX();
+				finger_y = (int) event.getY();
+				last_touch_time = System.currentTimeMillis();	
+				redrawMe();
+			}
+			case MotionEvent.ACTION_MOVE: {
+				//finger_x = (int) event.getX();
+				//finger_y = (int) event.getY();
+				//last_touch_time = System.currentTimeMillis();
+				break;
+			}
+			case MotionEvent.ACTION_UP: {
+				break;
+			}
+		}
+		return true;
+	}
+}
+
+

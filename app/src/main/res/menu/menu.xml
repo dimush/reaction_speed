@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/cleanHistItem" android:title="Clear Top 10"></item>
+    <item android:id="@+id/optionsItem" android:title="@string/options_menu"></item>
+    <!--not for RELEASE-->
+    <item android:id="@+id/buyItem" android:title="@string/buy_menu"></item>
+</menu>
