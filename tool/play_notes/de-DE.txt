@@ -1,0 +1,3 @@
+• Aktualisiert für Android 16
+• Einwilligungsdialog für Werbung, wo gesetzlich erforderlich
+• Kleinerer Download, Korrekturen für moderne Geräte

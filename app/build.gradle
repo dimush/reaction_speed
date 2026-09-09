@@ -1,23 +1,59 @@
-apply plugin: 'com.android.application'
+plugins {
+    id 'com.android.application'
+}
+
+// Release signing: keystore.properties (git-ignored) in the project root, or the shared
+// upload-key config used by the other Softosaurus apps. See keystore.properties.example.
+def keystorePropertiesFile = [
+        rootProject.file("keystore.properties"),
+        new File("C:/Development/OhMyFridge/android/key.properties"),
+].find { it.exists() } ?: rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
 
 android {
-    compileSdkVersion 33
     namespace "org.softosaurus.reactionspeed"
+    compileSdk 36
+
     defaultConfig {
         applicationId "org.softosaurus.reactionspeed"
-        minSdkVersion 21
-        targetSdkVersion 33
+        minSdk 23
+        targetSdk 36
+        versionCode 10
+        versionName "3.1"
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
     }
 
     buildTypes {
         release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
-    implementation 'androidx.preference:preference:1.2.1'
-    implementation 'com.google.android.gms:play-services-ads:23.0.0'
+    implementation 'androidx.appcompat:appcompat:1.8.0'
+    implementation 'com.google.android.gms:play-services-ads:25.4.0'
 }

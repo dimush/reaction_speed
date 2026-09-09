@@ -1,3 +1,58 @@
-/.gradle/
-/.idea/
+# ---- Gradle ----
+.gradle/
+build/
 /app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# ---- Local config (machine-specific, must not be committed) ----
+local.properties
+
+# ---- Android Studio / IntelliJ ----
+.idea/
+!.idea/codeStyles/
+*.iml
+*.ipr
+*.iws
+.navigation/
+
+# ---- Build artifacts & signing ----
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.jks
+*.keystore
+/app/release/
+/release/
+/app/build/outputs/mapping/
+
+# ---- Legacy Eclipse ADT layout (project migrated to app/) ----
+/bin/
+/gen/
+/.settings/
+/.classpath
+/.project
+/proguard.cfg
+/project.properties
+/src/
+/res/
+/assets/
+/AndroidManifest.xml
+/import-summary.txt
+
+# ---- Logs / misc ----
+*.log
+/lint/
+lint-report.html
+lint-results.xml
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Signing secrets ----
+keystore.properties

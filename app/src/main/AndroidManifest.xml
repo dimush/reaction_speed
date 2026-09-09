@@ -1,36 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    android:versionCode="9"
-    android:versionName="3.0" >
-
-    <!--not for RELEASE-->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!--not for RELEASE-->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
     <application
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name" >
+        android:label="@string/app_name"
+        android:allowBackup="true">
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-1665272374483034~3896660100"/>
+            android:value="ca-app-pub-1665272374483034~3896660100" />
         <activity
             android:name="org.softosaurus.reactionspeed.ReactionSpeedActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!--not for RELEASE activity-->
         <activity
             android:name="org.softosaurus.reactionspeed.OptionsActivity"
-            android:label="@string/title_activity_options" >
+            android:exported="false"
+            android:label="@string/title_activity_options">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="org.softosaurus.reactionspeed.ReactionSpeedActivity" />
