@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.core.content.edit
 import com.google.android.gms.games.AchievementsClient
 import com.google.android.gms.games.LeaderboardsClient
 import com.google.android.gms.games.PlayGames
@@ -298,7 +299,7 @@ class PlayGamesManager(
     }
 
     private fun markBootstrapDone() {
-        prefs.edit().putBoolean(KEY_LOCAL_BESTS_SENT, true).apply()
+        prefs.edit { putBoolean(KEY_LOCAL_BESTS_SENT, true) }
     }
 
     private fun readPending() = PendingScores(
@@ -307,10 +308,10 @@ class PlayGamesManager(
     )
 
     private fun writePending(scores: PendingScores) {
-        prefs.edit()
-            .putInt(KEY_PENDING_AVERAGE, scores.bestAverageMs ?: 0)
-            .putInt(KEY_PENDING_SINGLE, scores.bestSingleMs ?: 0)
-            .apply()
+        prefs.edit {
+            putInt(KEY_PENDING_AVERAGE, scores.bestAverageMs ?: 0)
+            putInt(KEY_PENDING_SINGLE, scores.bestSingleMs ?: 0)
+        }
     }
 
     // --- native UI ---------------------------------------------------------------------------

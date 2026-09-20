@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 and below (android:fullBackupContent). Only the game's own results and settings
+  are backed up; the Play Games pending-score scratch file is device-local and is left out.
+-->
+<full-backup-content>
+    <include domain="sharedpref" path="reaction_speed.xml" />
+</full-backup-content>

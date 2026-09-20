@@ -1,3 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <lint>
+
+    <!--
+      Reaction Speed is a one-hand, single-screen reflex game: a target that jumps between
+      landscape and portrait mid-series would change the difficulty of the very thing being
+      measured. The portrait lock is deliberate, and Android 16 large screens simply ignore it.
+    -->
+    <issue id="LockedOrientationActivity" severity="ignore" />
+    <issue id="DiscouragedApi" severity="ignore">
+        <ignore path="src/main/AndroidManifest.xml" />
+    </issue>
+
+    <!-- Toolchain versions are pinned deliberately (see gradle/libs.versions.toml). -->
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="OldTargetApi" severity="ignore" />
+
+    <!--
+      games-ids.xml is replaced wholesale by the Play Console export, so its resource names are
+      fixed even when the app does not read every one of them.
+    -->
+    <issue id="UnusedResources">
+        <ignore path="src/main/res/values/games-ids.xml" />
+    </issue>
+
+    <!-- The launcher icon is an adaptive icon plus vector fallbacks; no density buckets needed. -->
+    <issue id="IconMissingDensityFolder" severity="ignore" />
+
 </lint>

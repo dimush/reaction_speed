@@ -1,36 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <!--not for RELEASE-->
+    <!-- Ads and Play Games Services. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!--not for RELEASE-->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    <!-- Haptic feedback on the target; can be switched off in Settings. -->
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
     <application
-        android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name" >
+        android:name=".ReactionSpeedApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ReactionSpeed"
+        tools:targetApi="33">
+
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-1665272374483034~3896660100"/>
+            android:value="ca-app-pub-1665272374483034~3896660100" />
+        <meta-data
+            android:name="com.google.android.gms.games.APP_ID"
+            android:value="@string/game_services_project_id" />
+
         <activity
-            android:name="org.softosaurus.reactionspeed.ReactionSpeedActivity"
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density|fontScale"
             android:exported="true"
-            android:label="@string/app_name"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ReactionSpeed.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <!--not for RELEASE activity-->
-        <activity
-            android:name="org.softosaurus.reactionspeed.OptionsActivity"
-            android:label="@string/title_activity_options" >
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.softosaurus.reactionspeed.ReactionSpeedActivity" />
         </activity>
     </application>
 

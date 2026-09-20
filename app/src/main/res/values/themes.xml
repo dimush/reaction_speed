@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      The app draws everything with Compose, so the platform theme only has to provide a
+      window without an action bar. No AppCompat / Material Components dependency is needed.
+    -->
+    <style name="Theme.ReactionSpeed" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Installed by the manifest and swapped for Theme.ReactionSpeed by core-splashscreen. -->
+    <style name="Theme.ReactionSpeed.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.ReactionSpeed</item>
+    </style>
+
+</resources>

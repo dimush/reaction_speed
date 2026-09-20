@@ -2,6 +2,7 @@ package org.softosaurus.reactionspeed.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,11 +121,11 @@ class SharedPreferencesResultsRepository(
 
     private fun updateSettings(transform: (GameSettings) -> GameSettings) {
         val settings = transform(_settings.value)
-        prefs.edit()
-            .putBoolean(KEY_TARGET_SOUNDS, settings.targetSounds)
-            .putBoolean(KEY_STONE_SOUNDS, settings.stoneSounds)
-            .putBoolean(KEY_VIBRATION, settings.vibration)
-            .apply()
+        prefs.edit {
+            putBoolean(KEY_TARGET_SOUNDS, settings.targetSounds)
+            putBoolean(KEY_STONE_SOUNDS, settings.stoneSounds)
+            putBoolean(KEY_VIBRATION, settings.vibration)
+        }
         _settings.value = settings
     }
 
@@ -157,16 +158,16 @@ class SharedPreferencesResultsRepository(
     )
 
     private fun persist(board: ScoreBoard, settings: GameSettings, markMigrated: Boolean) {
-        val editor = prefs.edit()
-            .putString(KEY_TOP10, IntListCodec.encode(board.top10))
-            .putString(KEY_HISTORY, IntListCodec.encode(board.history))
-            .putInt(KEY_BEST_SINGLE, board.bestSingleMs ?: 0)
-            .putInt(KEY_SERIES_COUNT, board.seriesCount)
-            .putBoolean(KEY_TARGET_SOUNDS, settings.targetSounds)
-            .putBoolean(KEY_STONE_SOUNDS, settings.stoneSounds)
-            .putBoolean(KEY_VIBRATION, settings.vibration)
-        if (markMigrated) editor.putBoolean(KEY_MIGRATED, true)
-        editor.apply()
+        prefs.edit {
+            putString(KEY_TOP10, IntListCodec.encode(board.top10))
+            putString(KEY_HISTORY, IntListCodec.encode(board.history))
+            putInt(KEY_BEST_SINGLE, board.bestSingleMs ?: 0)
+            putInt(KEY_SERIES_COUNT, board.seriesCount)
+            putBoolean(KEY_TARGET_SOUNDS, settings.targetSounds)
+            putBoolean(KEY_STONE_SOUNDS, settings.stoneSounds)
+            putBoolean(KEY_VIBRATION, settings.vibration)
+            if (markMigrated) putBoolean(KEY_MIGRATED, true)
+        }
     }
 
     companion object {

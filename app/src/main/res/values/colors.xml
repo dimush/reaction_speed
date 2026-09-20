@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window and splash background; the night variant lives in values-night/colors.xml. -->
+    <color name="window_background">#FAF4E8</color>
+    <color name="splash_background">#3F6B36</color>
+</resources>
