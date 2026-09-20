@@ -1,3 +1,7 @@
-• Aktualisiert für Android 16
-• Einwilligungsdialog für Werbung, wo gesetzlich erforderlich
-• Kleinerer Download, Korrekturen für moderne Geräte
+Version 4.0 ist eine komplette Neuentwicklung!
+
+• Neues Material-3-Design mit dunklem Theme
+• Weltweite Bestenlisten und Erfolge über Google Play Games
+• Statistikbildschirm mit Verlaufsdiagramm deiner Serien
+• Präzisere Zeitmessung und Fehlstart-Erkennung
+• Deine alten Ergebnisse bleiben erhalten

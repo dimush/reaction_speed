@@ -1,3 +1,7 @@
-• Updated for Android 16
-• Ads consent dialog where required by law
-• Smaller download, fixes for modern devices
+4.0 is a full rewrite!
+
+• All-new Material 3 look, with dark theme
+• World leaderboards and achievements via Google Play Games
+• Statistics screen with a history chart of your past series
+• More accurate timing and false-start detection
+• Your old results are preserved

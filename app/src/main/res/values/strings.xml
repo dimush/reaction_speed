@@ -112,6 +112,6 @@
     <string name="settings_version">Version %1$s (%2$d)</string>
 
     <!-- Placeholder: confirm the live policy URL of the Play listing before release. -->
-    <string name="privacy_policy_url" translatable="false">https://softosaurus.org/privacy</string>
+    <string name="privacy_policy_url" translatable="false">https://sites.google.com/view/softosaurus/privacy-policy</string>
 
 </resources>

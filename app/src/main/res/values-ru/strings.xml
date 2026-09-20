@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Скорость реакции</string>
+
+    <!-- Generic -->
+    <string name="ms_format">%1$d мс</string>
+    <string name="ms_decimal_format">%1$s мс</string>
+    <string name="action_back">Назад</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="value_placeholder">&#8212;</string>
+
+    <!-- Home -->
+    <string name="home_tagline">Коснитесь красной цели, как только она появится.</string>
+    <string name="home_start">Старт</string>
+    <string name="home_how_to_play">Десять целей появляются одна за другой, каждая после
+        случайной паузы. Коснитесь каждой как можно быстрее. Результат — среднее из десяти
+        касаний без учёта самого быстрого и самого медленного.</string>
+    <string name="home_best_average">Лучшее среднее</string>
+    <string name="home_best_single">Лучший результат</string>
+    <string name="home_series">Серия</string>
+    <string name="home_last_result">Последний результат</string>
+    <string name="home_history_sparkline">Недавние результаты</string>
+    <string name="home_stats">Статистика</string>
+    <string name="home_settings">Настройки</string>
+
+    <!-- Home: the online card, shown only when Play Games is configured -->
+    <string name="online_title">Онлайн</string>
+    <string name="online_sign_in">Войти</string>
+    <string name="online_signing_in">Вход…</string>
+    <string name="online_signed_out">Войдите через Play Игры, чтобы соревноваться со всем миром.</string>
+    <!-- %1$d = the player's world rank -->
+    <string name="online_your_rank">Место в мире: №%1$d</string>
+    <string name="online_no_rank">Пока нет результата в рейтинге.</string>
+    <string name="online_leaderboards">Таблицы лидеров</string>
+    <string name="online_achievements">Достижения</string>
+    <string name="online_top_title">Топ-10 мира</string>
+    <string name="online_top_loading">Загрузка топа мира…</string>
+    <string name="online_top_empty">В таблице пока нет результатов.</string>
+    <!-- %1$d = rank, e.g. "3." -->
+    <string name="online_rank_format">%1$d.</string>
+    <string name="online_unknown_player">Игрок</string>
+
+    <!-- Game. The three game_* strings below are drawn on the playfield by GameRenderer. -->
+    <string name="game_screen_description">Игровое поле. Коснитесь красной цели, как только она появится.</string>
+    <!-- HUD progress, e.g. "3 / 10": %1$d = current attempt, %2$d = attempts in the series. -->
+    <string name="game_progress_format">%1$d / %2$d</string>
+    <!-- Reaction time floating up from the hit point, e.g. "231 ms". %1$d = milliseconds. -->
+    <string name="game_reaction_ms_format">%1$d мс</string>
+    <!-- Shown briefly when the player taps before the target appeared. -->
+    <string name="game_false_start">Слишком рано!</string>
+
+    <!-- Result -->
+    <string name="result_title">Результат</string>
+    <string name="result_verdict_superhuman">Сверхчеловек</string>
+    <string name="result_verdict_lightning">Молния</string>
+    <string name="result_verdict_fast">Быстро</string>
+    <string name="result_verdict_quick">Неплохо</string>
+    <string name="result_verdict_practice">Нужна тренировка</string>
+    <string name="result_new_best">Новый личный рекорд!</string>
+    <string name="result_attempts">Попытки</string>
+    <!-- %1$d = attempt number -->
+    <string name="result_attempt_number">%1$d.</string>
+    <!-- Spoken for an attempt the outlier filter dropped. %1$d = milliseconds. -->
+    <string name="result_attempt_discarded_format">%1$d мс, отброшено как выброс</string>
+    <string name="result_std_dev">Отклонение</string>
+    <string name="result_false_starts">Ложные старты</string>
+    <string name="result_misses">Промахи</string>
+    <string name="result_submitted">Отправлено в мировую таблицу лидеров.</string>
+    <string name="result_sign_in_cta">Войдите, чтобы соревноваться со всем миром.</string>
+    <string name="result_implausible">Быстрее, чем возможно для человека — результат не отправлен в таблицу лидеров.</string>
+    <string name="result_again">Ещё раз</string>
+    <string name="result_home">На главную</string>
+    <string name="result_leaderboard">Таблица лидеров</string>
+
+    <!-- Statistics -->
+    <string name="stats_title">Статистика</string>
+    <string name="stats_history">История</string>
+    <string name="stats_top10">Топ-10</string>
+    <string name="stats_totals">Всего</string>
+    <string name="stats_all_time_best">Лучший результат за всё время</string>
+    <string name="stats_last10_average">Среднее за последние 10</string>
+    <string name="stats_trend">Тенденция</string>
+    <string name="stats_trend_improving">Улучшается</string>
+    <string name="stats_trend_steady">Стабильно</string>
+    <string name="stats_trend_slower">Замедляется</string>
+    <string name="stats_empty">Пока нет результатов. Завершите серию, и здесь появится история.</string>
+    <string name="stats_chart_description">Линейный график результатов серий за всё время.</string>
+    <string name="stats_clear">Очистить историю</string>
+    <string name="stats_clear_title">Очистить историю?</string>
+    <string name="stats_clear_message">Результаты, топ-10 и лучший результат будут удалены с
+        этого устройства. Это действие нельзя отменить.</string>
+    <string name="stats_clear_confirm">Очистить</string>
+    <plurals name="stats_series_count">
+        <item quantity="one">%1$d серия</item>
+        <item quantity="few">%1$d серии</item>
+        <item quantity="many">%1$d серий</item>
+        <item quantity="other">%1$d серии</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_section_game">Игра</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="use_target_sound">Звук цели</string>
+    <string name="use_stone_sounds">Звуки камня</string>
+    <string name="use_vibration">Вибрация</string>
+    <string name="settings_privacy_options">Настройки конфиденциальности</string>
+    <string name="settings_privacy_policy">Политика конфиденциальности</string>
+    <string name="settings_rate">Оценить приложение</string>
+    <!-- %1$s = version name, %2$d = version code -->
+    <string name="settings_version">Версия %1$s (%2$d)</string>
+
+</resources>
