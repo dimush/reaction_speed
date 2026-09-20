@@ -35,8 +35,15 @@ import org.softosaurus.reactionspeed.data.GameSettings
  * Reaction times are measured between the moment the frame carrying the target was posted
  * (`SystemClock.uptimeMillis()` right after `unlockCanvasAndPost`, handed to
  * [GameEngine.markTargetPresented]) and `MotionEvent.eventTime` of the tap — the same monotonic
- * base, and free of input-queue latency. The target's sound and vibration fire at that same moment,
- * so no cue can ever precede the pixels.
+ * base, and free of input-queue latency.
+ *
+ * The sound and the vibration fire at that same moment, i.e. when the frame is **queued**, which is
+ * one or two vsyncs (~16–33 ms) before it is actually scanned out. So a cue can in principle reach
+ * the player slightly before the pixels do. That is deliberate and harmless in this direction: the
+ * baseline is the queue time, which is earlier than the true presentation time, so every measured
+ * reaction comes out a touch *slower* than reality and no legitimate tap is ever mistaken for a
+ * false start. Moving the baseline later (e.g. to a real presentation timestamp) would make times
+ * flatter but would start rejecting honest fast taps, which is the worse trade.
  *
  * ### Host contract
  * ```
@@ -69,7 +76,15 @@ class GameView @JvmOverloads constructor(
          */
         fun onProgress(attemptIndex: Int, lastReactionMs: Int?) {}
 
-        /** The player tapped before the target was on screen; the pending delay was re-rolled. */
+        /**
+         * The player tapped before the target was on screen; the pending delay was re-rolled.
+         *
+         * Nothing in the app overrides this: false starts are already shown by the renderer (the
+         * "Too early!" flash) and counted into [SeriesResult.falseStarts], so the host has nothing
+         * to add. It stays on the interface as the one hook for host-side feedback — a toast, a
+         * tutorial nudge — and because a series-progress interface that silently omitted its one
+         * error event would be a strange thing to hand the next reader.
+         */
         fun onFalseStart() {}
 
         /** The series completed normally. */
@@ -156,8 +171,8 @@ class GameView @JvmOverloads constructor(
      * navigation bar and the ad banner. The HUD is laid out inside the remaining safe area and
      * reserves its own strip on top of [top], so targets never hide behind it.
      *
-     * Applying this mid-series is allowed; a target already on screen stays where it is (see
-     * [GameEngine.setField]), only the next one respects the new insets.
+     * Applying this mid-series is allowed: a target already on screen is clamped into the new safe
+     * area by [GameEngine.setField], so a resize can never strand it off-surface.
      */
     fun setSafeInsets(left: Int, top: Int, right: Int, bottom: Int) {
         submit(Cmd.SafeInsets(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat()))
@@ -199,6 +214,12 @@ class GameView @JvmOverloads constructor(
      */
     fun release() {
         stopRenderThread()
+        if (liveRenderThread() != null) {
+            // Freeing the bitmaps under a thread that is still drawing would turn a stuck teardown
+            // into a crash. Leaking them until the process goes away is the lesser evil.
+            Log.w(TAG, "render thread outlived its join; renderer and audio left for the GC")
+            return
+        }
         renderer.release()
         audio.release()
     }
@@ -251,8 +272,25 @@ class GameView @JvmOverloads constructor(
 
     // --- thread lifecycle -------------------------------------------------------------------------
 
+    /**
+     * The render thread if one is **still running**, else `null`.
+     *
+     * The reference is only ever dropped here, once the thread is genuinely dead. A join that timed
+     * out must not be treated as a successful stop: everything that assumes "no render thread"
+     * — starting a second one, draining commands inline, releasing the renderer — would then run
+     * concurrently with a thread that is still touching the engine and the surface.
+     *
+     * Main-thread only, like the rest of the thread lifecycle.
+     */
+    private fun liveRenderThread(): RenderThread? {
+        val thread = renderThread ?: return null
+        if (thread.isAlive) return thread
+        renderThread = null
+        return null
+    }
+
     private fun maybeStartRenderThread() {
-        if (!surfaceAvailable || !resumed || renderThread != null) return
+        if (!surfaceAvailable || !resumed || liveRenderThread() != null) return
         lock.withLock { running = true }
         lastDrawFailed = false
         dirty = true
@@ -260,8 +298,7 @@ class GameView @JvmOverloads constructor(
     }
 
     private fun stopRenderThread() {
-        val thread = renderThread ?: return
-        renderThread = null
+        val thread = liveRenderThread() ?: run { renderThread = null; return }
         // Both in one critical section: a thread parked in await() would otherwise never wake and
         // the join below would hang the main thread. The per-thread flag makes sure that a thread
         // which outlived its join cannot come back to life when `running` is set again.
@@ -275,7 +312,14 @@ class GameView @JvmOverloads constructor(
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
         }
-        if (thread.isAlive) Log.w(TAG, "render thread did not stop within ${JOIN_TIMEOUT_MS}ms")
+        if (thread.isAlive) {
+            // Keep the reference: while it is set, nothing else will touch the engine or the
+            // renderer. `alive` is already false, so the thread exits at its next loop check and
+            // the next liveRenderThread() call clears it.
+            Log.w(TAG, "render thread did not stop within ${JOIN_TIMEOUT_MS}ms")
+            return
+        }
+        renderThread = null
     }
 
     private inner class RenderThread : Thread("ReactionSpeed-Render") {
@@ -374,8 +418,8 @@ class GameView @JvmOverloads constructor(
             pending.addLast(cmd)
             work.signalAll()
         }
-        // No render thread => nobody else can be touching the engine, so run it here and now.
-        if (renderThread == null) drainInline()
+        // No *live* render thread => nobody else can be touching the engine, so run it here and now.
+        if (liveRenderThread() == null) drainInline()
     }
 
     private fun drainInline() {

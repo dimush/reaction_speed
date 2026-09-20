@@ -282,6 +282,88 @@ class GameEngineTest {
         assertTrue(engine.measuredReactionTimes.isEmpty())
     }
 
+    // --- setField mid-series (split-screen, unfold, a banner band appearing) ------------------
+
+    @Test
+    fun `setField clamps a visible target into the new safe area`() {
+        val engine = engine()
+        engine.start(0L)
+        val now = engine.advanceToTarget(0L)
+        val before = engine.visibleTarget!!
+
+        // The window shrinks hard and grows a fat bottom inset, as an ad band would.
+        val newWidth = 600f
+        val newHeight = 900f
+        val insets = Insets(left = 20f, top = 80f, right = 20f, bottom = 200f)
+        engine.setField(newWidth, newHeight, insets)
+
+        val after = engine.visibleTarget!!
+        assertTrue("x=${after.x}", after.x - after.radiusPx >= insets.left - 1e-3f)
+        assertTrue("x=${after.x}", after.x + after.radiusPx <= newWidth - insets.right + 1e-3f)
+        assertTrue("y=${after.y}", after.y - after.radiusPx >= insets.top - 1e-3f)
+        assertTrue("y=${after.y}", after.y + after.radiusPx <= newHeight - insets.bottom + 1e-3f)
+        // It really was out of bounds before, i.e. the test is not vacuous.
+        assertTrue(before.x > newWidth || before.y > newHeight - insets.bottom)
+
+        // And the attempt is still completable, which is the whole point.
+        val events = engine.onTouch(after.x, after.y, now + 250)
+        assertTrue(events.first() is GameEvent.Hit)
+    }
+
+    @Test
+    fun `a series survives a resize on every attempt`() {
+        val engine = engine()
+        engine.start(0L)
+        var now = 0L
+        repeat(10) { i ->
+            now = engine.advanceToTarget(now)
+            // Alternate between two very different windows while the target is up.
+            if (i % 2 == 0) {
+                engine.setField(700f, 1000f, Insets(top = 70f, bottom = 180f))
+            } else {
+                engine.setField(width, height, Insets(top = 70f, bottom = 180f))
+            }
+            val t = engine.visibleTarget!!
+            now += 250
+            assertTrue("attempt $i unhittable", engine.onTouch(t.x, t.y, now).first() is GameEvent.Hit)
+        }
+        assertTrue(engine.phase is GamePhase.Finished)
+    }
+
+    @Test
+    fun `setField keeps the target inside a degenerate field`() {
+        val engine = engine()
+        engine.start(0L)
+        engine.advanceToTarget(0L)
+
+        // Insets eat the whole field: the target falls back to the centre of the (empty) safe area.
+        engine.setField(400f, 400f, Insets(left = 200f, top = 200f, right = 200f, bottom = 200f))
+
+        val t = engine.visibleTarget!!
+        assertEquals(200f, t.x, 1e-3f)
+        assertEquals(200f, t.y, 1e-3f)
+    }
+
+    @Test
+    fun `setField during a wait leaves the phase alone and the next spawn uses the new field`() {
+        val engine = engine()
+        engine.start(0L)
+        val waiting = engine.phase as GamePhase.Waiting
+
+        val insets = Insets(left = 10f, top = 50f, right = 10f, bottom = 160f)
+        engine.setField(640f, 960f, insets)
+
+        // Waiting carries no geometry, so nothing about it may change.
+        assertEquals(waiting, engine.phase)
+
+        engine.tick(waiting.startedAtMs + waiting.delayMs)
+        val t = engine.visibleTarget!!
+        assertTrue("x=${t.x}", t.x - t.radiusPx >= insets.left - 1e-3f)
+        assertTrue("x=${t.x}", t.x + t.radiusPx <= 640f - insets.right + 1e-3f)
+        assertTrue("y=${t.y}", t.y - t.radiusPx >= insets.top - 1e-3f)
+        assertTrue("y=${t.y}", t.y + t.radiusPx <= 960f - insets.bottom + 1e-3f)
+    }
+
     @Test
     fun `seeded runs are reproducible`() {
         fun run(): List<Pair<Float, Float>> {

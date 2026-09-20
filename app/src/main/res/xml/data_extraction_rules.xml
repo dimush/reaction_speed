@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Android 12+ (android:dataExtractionRules). Same policy as backup_rules.xml: the results and
-  settings file travels with cloud backup and device-to-device transfer, nothing else does.
+  settings files travel with cloud backup and device-to-device transfer, nothing else does.
+  The legacy 3.x file is carried along so that a 3.x backup restored under 4.0 still migrates.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="reaction_speed.xml" />
+        <include domain="sharedpref" path="ReactionSpeedActivity.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="reaction_speed.xml" />
+        <include domain="sharedpref" path="ReactionSpeedActivity.xml" />
     </device-transfer>
 </data-extraction-rules>

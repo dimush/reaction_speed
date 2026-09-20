@@ -49,6 +49,8 @@
     <string name="game_reaction_ms_format">%1$d мс</string>
     <!-- Shown briefly when the player taps before the target appeared. -->
     <string name="game_false_start">Слишком рано!</string>
+    <!-- Overlay after the app was interrupted mid-series; the series waits for a tap. -->
+    <string name="game_tap_to_start">Нажмите, чтобы начать новую серию</string>
 
     <!-- Result -->
     <string name="result_title">Результат</string>

@@ -64,7 +64,9 @@ data class LeaderboardEntry(
  *
  * ### Lifecycle and activity references
  * The manager holds the *application* context strongly and never holds an Activity strongly:
- * every call that needs one takes it as a parameter. [onActivityStart] additionally parks a
+ * every call that needs one takes it as a parameter, and every GMS listener that has to reach one
+ * later captures a [WeakReference] and re-checks `isFinishing`/`isDestroyed` before using it — a
+ * GMS task can easily outlive the screen that started it. [onActivityStart] additionally parks a
  * [WeakReference] so the two `suspend` loaders can be called from a ViewModel without threading
  * an Activity through the UI layer; it is cleared in [onActivityStop].
  *
@@ -132,6 +134,10 @@ class PlayGamesManager(
     fun onActivityStart(activity: Activity) {
         if (!isConfigured) return
         currentActivity = WeakReference(activity)
+        // GMS keeps the completion listener alive until the task resolves, which can outlast the
+        // activity; a strong capture would pin a whole destroyed Activity (and its window) until
+        // then. The reference is weak and re-checked before any follow-up work touches it.
+        val host = WeakReference(activity)
         runCatching {
             PlayGames.getGamesSignInClient(activity).isAuthenticated()
                 .addOnCompleteListener { task ->
@@ -139,10 +145,31 @@ class PlayGamesManager(
                     if (!task.isSuccessful) {
                         Log.w(TAG, "isAuthenticated failed", task.exception)
                     }
-                    onAuthenticationResolved(activity, authenticated)
+                    resolveOn(host, authenticated)
                 }
         }.onFailure { Log.w(TAG, "isAuthenticated threw", it) }
     }
+
+    /**
+     * Runs [onAuthenticationResolved] against [host] if it is still a usable Activity. When it is
+     * not, the visible state is still kept honest — only the work that genuinely needs an Activity
+     * (the player profile, flushing queued scores) is skipped, and the next `onStart` redoes it.
+     */
+    private fun resolveOn(host: WeakReference<Activity>, authenticated: Boolean) {
+        val live = host.live()
+        if (live == null) {
+            when {
+                !authenticated -> _state.value = PlayGamesState.SignedOut
+                // Don't clobber a name that a previous resolution already loaded.
+                !isSignedIn -> _state.value = PlayGamesState.SignedIn()
+            }
+            return
+        }
+        onAuthenticationResolved(live, authenticated)
+    }
+
+    private fun WeakReference<Activity>.live(): Activity? =
+        get()?.takeIf { !it.isFinishing && !it.isDestroyed }
 
     /** Call from the host activity's `onStop()`. */
     fun onActivityStop(activity: Activity) {
@@ -161,13 +188,16 @@ class PlayGamesManager(
             return
         }
         _state.value = PlayGamesState.SigningIn
+        // Weak for the same reason as in onActivityStart: the sign-in task can outlive the screen
+        // that started it (the user rotates, or backs out while the GMS dialog is up).
+        val host = WeakReference(activity)
         runCatching {
             PlayGames.getGamesSignInClient(activity).signIn()
                 .addOnCompleteListener { task ->
                     val authenticated = task.isSuccessful && task.result?.isAuthenticated == true
                     if (!task.isSuccessful) Log.w(TAG, "signIn failed", task.exception)
-                    onAuthenticationResolved(activity, authenticated)
-                    if (authenticated) onSuccess?.invoke(activity)
+                    resolveOn(host, authenticated)
+                    if (authenticated) host.live()?.let { onSuccess?.invoke(it) }
                 }
         }.onFailure {
             Log.w(TAG, "signIn threw", it)
@@ -405,7 +435,7 @@ class PlayGamesManager(
 
     private fun readyActivity(): Activity? {
         if (!isConfigured || !isSignedIn) return null
-        return currentActivity.get()?.takeIf { !it.isFinishing && !it.isDestroyed }
+        return currentActivity.live()
     }
 
     private fun LeaderboardScore.toEntry() = LeaderboardEntry(

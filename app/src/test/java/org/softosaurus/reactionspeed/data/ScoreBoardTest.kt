@@ -77,6 +77,27 @@ class ScoreBoardTest {
     }
 
     @Test
+    fun `a degenerate zero-millisecond series is clamped, not rejected`() {
+        // SeriesScorer can hand back a filteredMean of 0 for a pathological series (a clock that
+        // did not move, a synthetic event stream). Storing it must not take the app down on the
+        // way to the result screen.
+        val board = ScoreBoard().withSeries(0, bestSingleMs = 0)
+
+        assertEquals(listOf(1), board.top10)
+        assertEquals(listOf(1), board.history)
+        assertEquals(1, board.seriesCount)
+        assertNull("a zero best-single is not a record", board.bestSingleMs)
+    }
+
+    @Test
+    fun `a negative score is clamped too`() {
+        val board = ScoreBoard().withSeries(-40)
+
+        assertEquals(listOf(1), board.top10)
+        assertEquals(listOf(1), board.history)
+    }
+
+    @Test
     fun `int list survives a storage round trip`() {
         val values = listOf(270, 288, 301)
 

@@ -43,6 +43,7 @@ import org.softosaurus.reactionspeed.game.SeriesResult
 import org.softosaurus.reactionspeed.games.LeaderboardId
 import org.softosaurus.reactionspeed.games.PlayGamesLocator
 import org.softosaurus.reactionspeed.games.PlayGamesState
+import org.softosaurus.reactionspeed.ui.FinishedSeries
 import org.softosaurus.reactionspeed.ui.GameSessionViewModel
 import org.softosaurus.reactionspeed.ui.common.BannerScaffold
 import org.softosaurus.reactionspeed.ui.common.msWithDecimal
@@ -51,10 +52,10 @@ import org.softosaurus.reactionspeed.ui.common.rememberActivity
 /**
  * The score of the series just played.
  *
- * Recording and online submission happen here, in a single guarded call into
- * [GameSessionViewModel.consume] — re-entering the screen or rotating the device cannot
- * double-count a series. After process death there is no result to show and the screen returns
- * Home instead of rendering an empty page.
+ * The series was already stored when it finished; only the online submission happens here, in a
+ * single guarded call into [GameSessionViewModel.consume] — re-entering the screen or rotating the
+ * device cannot double-count a series. After process death there is no result to show and the
+ * screen returns Home instead of rendering an empty page.
  */
 @Composable
 fun ResultScreen(
@@ -64,12 +65,28 @@ fun ResultScreen(
 ) {
     val finished by session.finished.collectAsStateWithLifecycle()
     val activity = rememberActivity()
+    val flow = remember { ResultFlow() }
 
+    // "Again" clears the session's result *before* navigating, and this screen stays composed for
+    // the whole exit transition — without the guard the effect would re-fire with a null result and
+    // send the user Home instead. The same flag keeps a second tap on either button from navigating
+    // twice.
     LaunchedEffect(finished, activity) {
+        if (flow.leaving) return@LaunchedEffect
         if (finished == null) onHome() else if (activity != null) session.consume(activity)
     }
 
-    val current = finished ?: return
+    // The last result stays on screen while the outgoing transition plays, so "Again" does not
+    // flash an empty page on its way to the game.
+    if (finished != null) flow.lastShown = finished
+    val current = flow.lastShown ?: return
+
+    val leave = { action: () -> Unit ->
+        if (!flow.leaving) {
+            flow.leaving = true
+            action()
+        }
+    }
     val manager = PlayGamesLocator.managerOrNull()
     val stateFlow = remember(manager) {
         manager?.state ?: MutableStateFlow<PlayGamesState>(PlayGamesState.NotConfigured)
@@ -142,7 +159,7 @@ fun ResultScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Button(
-                    onClick = onAgain,
+                    onClick = { leave(onAgain) },
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 52.dp),
@@ -150,7 +167,7 @@ fun ResultScreen(
                     Text(stringResource(R.string.result_again))
                 }
                 OutlinedButton(
-                    onClick = onHome,
+                    onClick = { leave(onHome) },
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 52.dp),
@@ -171,6 +188,21 @@ fun ResultScreen(
             }
         }
     }
+}
+
+/**
+ * Mutable, non-observable flags of one visit to the result screen. Like the game screen's flow
+ * object these are read and written from callbacks during navigation, never rendered, so making
+ * them Compose state would only buy a recomposition nobody needs. [lastShown] is the exception in
+ * spirit but not in effect: it is only ever assigned during composition, from a value that already
+ * triggered one.
+ */
+private class ResultFlow {
+    /** The user is on their way out; further effects must not navigate again. */
+    var leaving = false
+
+    /** The last non-null result, kept so the exit transition has something to draw. */
+    var lastShown: FinishedSeries? = null
 }
 
 @Composable

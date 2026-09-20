@@ -2,6 +2,7 @@ package org.softosaurus.reactionspeed.ads
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import com.google.android.gms.ads.MobileAds
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
@@ -14,21 +15,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.softosaurus.reactionspeed.BuildConfig
+import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * GDPR / US-states consent (Google User Messaging Platform) followed by a one-time
  * Mobile Ads SDK initialization.
  *
- * Call [start] from the app's entry point Activity (e.g. `onCreate`). It is safe to call
- * repeatedly (from `onResume` etc.) - the underlying consent/init work only happens once
- * per process, or again if consent state genuinely needs re-checking.
+ * Call [start] from the app's entry point Activity, from both `onCreate` and `onStart`. It is safe
+ * to call repeatedly - the underlying consent/init work only happens once per process. A flow that
+ * genuinely failed (offline at launch, an activity that died before the form could be shown)
+ * re-arms itself, so the next call retries instead of leaving the process adless forever.
  *
  * Ad-serving surfaces (e.g. [AdBanner]) must observe [canRequestAds] and must not attempt
  * to load an ad before it becomes true - doing so would violate consent requirements and
  * risk requesting ads before the Mobile Ads SDK is initialized.
  */
 object AdsManager {
+
+    private const val TAG = "AdsManager"
 
     /** Test banner unit id supplied by Google for debug builds - always fills, never billed. */
     private const val TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
@@ -80,22 +85,61 @@ object AdsManager {
             onConsentResolved(consentInfo)
         }
 
-        consentInfo.requestConsentInfoUpdate(
-            activity,
-            params,
-            {
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) {
-                    // Form dismissed (or none was required) - check the latest state.
-                    onConsentResolved(consentInfo)
+        // The callbacks below can arrive long after this activity is gone (a rotation, a back
+        // press, a process that stayed warm). Showing a form on a dead activity throws, so the
+        // reference is weak and re-checked at use.
+        val host = WeakReference(activity)
+
+        runCatching {
+            consentInfo.requestConsentInfoUpdate(
+                activity,
+                params,
+                {
+                    val current = host.liveActivity()
+                    if (current == null) {
+                        // Nothing to show a form on. Publish whatever state we have and let the
+                        // next Activity run the flow again.
+                        finishAttempt(consentInfo)
+                    } else {
+                        UserMessagingPlatform.loadAndShowConsentFormIfRequired(current) { error ->
+                            // Form dismissed (or none was required) - check the latest state.
+                            if (error != null) Log.w(TAG, "consent form failed: ${error.message}")
+                            finishAttempt(consentInfo)
+                        }
+                    }
+                },
+                { error ->
+                    // Consent info unavailable (e.g. offline). If ads were already allowed from a
+                    // prior session this still lets the app proceed; otherwise ads stay disabled
+                    // and the next start() retries.
+                    Log.w(TAG, "consent info update failed: ${error.message}")
+                    finishAttempt(consentInfo)
                 }
-            },
-            {
-                // Consent info unavailable (e.g. offline). If ads were already allowed from a
-                // prior session this still lets the app proceed; otherwise ads stay disabled.
-                onConsentResolved(consentInfo)
-            }
-        )
+            )
+        }.onFailure {
+            Log.w(TAG, "requestConsentInfoUpdate threw", it)
+            started.set(false)
+        }
     }
+
+    /**
+     * Publishes the resolved consent state and, when ads are *still* not allowed, re-arms [started]
+     * so that the next [start] call gets another attempt.
+     *
+     * Without this the one-shot flag burned on the first failure and a process that lost the very
+     * first consent round trip (offline at launch, say) would never show an ad again, however long
+     * it lived. The flag is only re-armed on genuine failure: for a user whose consent is already
+     * settled it stays set, so `onStart` does not re-run the flow on every foregrounding.
+     */
+    private fun finishAttempt(consentInfo: ConsentInformation) {
+        onConsentResolved(consentInfo)
+        if (!runCatching { consentInfo.canRequestAds() }.getOrDefault(false)) {
+            started.set(false)
+        }
+    }
+
+    private fun WeakReference<Activity>.liveActivity(): Activity? =
+        get()?.takeIf { !it.isFinishing && !it.isDestroyed }
 
     /** Shows the "privacy options" form (required once consent has been given under GDPR/US-states). */
     fun showPrivacyOptions(activity: Activity, onDone: () -> Unit = {}) {

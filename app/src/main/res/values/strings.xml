@@ -51,6 +51,8 @@
     <string name="game_reaction_ms_format">%1$d ms</string>
     <!-- Shown briefly when the player taps before the target appeared. -->
     <string name="game_false_start">Too early!</string>
+    <!-- Overlay after the app was interrupted mid-series; the series waits for a tap. -->
+    <string name="game_tap_to_start">Tap to start a new series</string>
 
     <!-- Result -->
     <string name="result_title">Result</string>
@@ -111,7 +113,7 @@
     <!-- %1$s = version name, %2$d = version code -->
     <string name="settings_version">Version %1$s (%2$d)</string>
 
-    <!-- Placeholder: confirm the live policy URL of the Play listing before release. -->
+    <!-- The live policy URL of the Play listing; verified against the published listing. -->
     <string name="privacy_policy_url" translatable="false">https://sites.google.com/view/softosaurus/privacy-policy</string>
 
 </resources>

@@ -25,9 +25,11 @@ data class FinishedSeries(
 /**
  * Hand-over between the game screen and the result screen, scoped to the activity.
  *
- * The result cannot travel as a navigation argument, and it must be recorded **exactly once**:
- * [consume] is guarded by a flag that survives recomposition and configuration changes, so
- * neither a rotation nor a re-entry of the result screen can double-count a series.
+ * The result cannot travel as a navigation argument, and it must be recorded **exactly once**.
+ * Recording happens in [onSeriesFinished], the moment the series ends, guarded by the `_finished`
+ * check; online submission happens later in [consume], guarded by its own flag. Both flags survive
+ * recomposition and configuration changes, so neither a rotation nor a re-entry of the result
+ * screen can double-count a series.
  *
  * After process death the flow is simply empty; the result screen then returns Home instead of
  * rendering a blank page.
@@ -48,22 +50,37 @@ class GameSessionViewModel(
         consumed = false
     }
 
-    /** Called from the game screen's listener when a series completed normally. */
+    /**
+     * Called from the game screen's listener when a series completed normally, and the point at
+     * which the result becomes **persistent**: storing it here rather than on the result screen
+     * means a series survives the player killing the app, losing the process or never reaching the
+     * result screen at all. The double-call guard is the same `_finished` check that already made
+     * this idempotent.
+     *
+     * The personal-best verdict is computed *before* [ResultsRepository.addResult], or the score
+     * just played would be compared against itself.
+     */
     fun onSeriesFinished(result: SeriesResult) {
         if (_finished.value != null) return
         val previousBest = results.top10.value.firstOrNull()
+        results.addResult(result)
         _finished.value = FinishedSeries(
             result = result,
             isNewPersonalBest = previousBest == null || result.filteredMean < previousBest,
         )
     }
 
-    /** Stores the series and hands it to Play Games. Idempotent. */
+    /**
+     * Hands the already-stored series to Play Games. Idempotent — re-entering the result screen or
+     * rotating the device cannot submit twice.
+     *
+     * `seriesCount` is read here, after [onSeriesFinished] stored the result, which is exactly the
+     * "count after the result has been stored" that [PlayGamesManager.submitResult] documents.
+     */
     fun consume(activity: Activity) {
         val finished = _finished.value ?: return
         if (consumed) return
         consumed = true
-        results.addResult(finished.result)
         playGames?.submitResult(activity, finished.result, results.seriesCount.value)
     }
 

@@ -2,7 +2,12 @@
 <!--
   Android 11 and below (android:fullBackupContent). Only the game's own results and settings
   are backed up; the Play Games pending-score scratch file is device-local and is left out.
+
+  The legacy 3.x file is included too: a backup taken on 3.x carries nothing else, and 4.0
+  migrates it into reaction_speed.xml on first launch. Without it a user restoring a 3.x backup
+  onto a fresh 4.0 install would lose their whole history.
 -->
 <full-backup-content>
     <include domain="sharedpref" path="reaction_speed.xml" />
+    <include domain="sharedpref" path="ReactionSpeedActivity.xml" />
 </full-backup-content>

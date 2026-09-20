@@ -1,10 +1,13 @@
 package org.softosaurus.reactionspeed.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import org.softosaurus.reactionspeed.ads.LocalAdBannerHost
+import org.softosaurus.reactionspeed.ads.rememberAdBannerHost
 import org.softosaurus.reactionspeed.ui.game.GameScreen
 import org.softosaurus.reactionspeed.ui.home.HomeScreen
 import org.softosaurus.reactionspeed.ui.result.ResultScreen
@@ -26,53 +29,59 @@ private object Routes {
  *
  * Predictive back is handled by navigation-compose itself; `android:enableOnBackInvokedCallback`
  * in the manifest enables the system side of it.
+ *
+ * The one ad banner of the activity is created here, above the graph, so that it outlives every
+ * individual screen and is loaded exactly once per activity.
  */
 @Composable
 fun ReactionSpeedNavHost() {
     val navController = rememberNavController()
     val session: GameSessionViewModel = viewModel(factory = GameSessionViewModel.Factory)
+    val adBannerHost = rememberAdBannerHost()
 
     fun startGame() {
         session.prepareNewSeries()
         navController.navigate(Routes.GAME)
     }
 
-    NavHost(navController = navController, startDestination = Routes.HOME) {
-        composable(Routes.HOME) {
-            HomeScreen(
-                onStart = ::startGame,
-                onOpenStats = { navController.navigate(Routes.STATS) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-            )
-        }
-        composable(Routes.GAME) {
-            GameScreen(
-                session = session,
-                onFinished = {
-                    navController.navigate(Routes.RESULT) {
-                        popUpTo(Routes.GAME) { inclusive = true }
-                    }
-                },
-                onAbort = { navController.popBackStack() },
-            )
-        }
-        composable(Routes.RESULT) {
-            ResultScreen(
-                session = session,
-                onAgain = {
-                    session.prepareNewSeries()
-                    navController.navigate(Routes.GAME) {
-                        popUpTo(Routes.RESULT) { inclusive = true }
-                    }
-                },
-                onHome = { navController.popBackStack(Routes.HOME, inclusive = false) },
-            )
-        }
-        composable(Routes.STATS) {
-            StatsScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+    CompositionLocalProvider(LocalAdBannerHost provides adBannerHost) {
+        NavHost(navController = navController, startDestination = Routes.HOME) {
+            composable(Routes.HOME) {
+                HomeScreen(
+                    onStart = ::startGame,
+                    onOpenStats = { navController.navigate(Routes.STATS) },
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                )
+            }
+            composable(Routes.GAME) {
+                GameScreen(
+                    session = session,
+                    onFinished = {
+                        navController.navigate(Routes.RESULT) {
+                            popUpTo(Routes.GAME) { inclusive = true }
+                        }
+                    },
+                    onAbort = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.RESULT) {
+                ResultScreen(
+                    session = session,
+                    onAgain = {
+                        session.prepareNewSeries()
+                        navController.navigate(Routes.GAME) {
+                            popUpTo(Routes.RESULT) { inclusive = true }
+                        }
+                    },
+                    onHome = { navController.popBackStack(Routes.HOME, inclusive = false) },
+                )
+            }
+            composable(Routes.STATS) {
+                StatsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }

@@ -70,21 +70,69 @@ The Play Console will ask, separately from Data safety, whether the app uses adv
 
 ## Privacy policy URL
 
-- Reminder for the account owner: verify the privacy policy URL already set in the Play
-  Console store listing is still live (not 404/parked) and that its text explicitly mentions:
+The in-app "Privacy policy" link (`privacy_policy_url` in `strings.xml`) points at
+`https://sites.google.com/view/softosaurus/privacy-policy`, which has been verified live and
+matches the URL set in the Play listing.
+
+- Remaining check for the account owner: confirm the policy *text* explicitly mentions:
   - use of AdMob / Google ads and the advertising identifier,
   - use of Play Games Services (player ID / sign-in), and
   - a link to Google's own privacy/ads policies (e.g. https://policies.google.com/technologies/ads)
     if the current policy text doesn't already cover third-party ad partners.
 
-## Manifest permissions expected in the final app
+## Manifest permissions actually shipped
 
-After this phase, `AndroidManifest.xml` (owned by the manifest workstream, not touched here)
-should declare:
+**Do not read this list off `app/src/main/AndroidManifest.xml`.** What Play sees — and what the
+"App permissions" section of the store listing shows users — is the *merged* manifest, which
+includes everything the AdMob, UMP and Play Games libraries contribute. Regenerate the list
+after any dependency bump:
 
-- `android.permission.INTERNET`
-- `android.permission.ACCESS_NETWORK_STATE`
-- `android.permission.VIBRATE`
-- `com.google.android.gms.permission.AD_ID`
+```
+./gradlew.bat bundleRelease
+grep -o 'uses-permission[^>]*android:name="[^"]*"' \
+  app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
+```
 
-(All four are already present in the manifest as of this writing.)
+As of versionCode 11 the merged release manifest declares:
+
+| Permission | Comes from | Notes |
+|---|---|---|
+| `android.permission.INTERNET` | this app's manifest | Ads, Play Games |
+| `android.permission.ACCESS_NETWORK_STATE` | this app's manifest | Ads, Play Games |
+| `android.permission.VIBRATE` | this app's manifest | Haptic target cue; user-switchable in Settings |
+| `com.google.android.gms.permission.AD_ID` | this app's manifest | Advertising ID; declared in Play Console (see above) |
+| `android.permission.WAKE_LOCK` | **Ads SDK** (play-services-ads) | Not requested by app code |
+| `android.permission.FOREGROUND_SERVICE` | **Ads SDK** (play-services-ads) | Not requested by app code |
+| `android.permission.ACCESS_ADSERVICES_AD_ID` | **Ads SDK** (Privacy Sandbox) | Normal permission, no runtime prompt |
+| `android.permission.ACCESS_ADSERVICES_ATTRIBUTION` | **Ads SDK** (Privacy Sandbox) | Normal permission, no runtime prompt |
+| `android.permission.ACCESS_ADSERVICES_TOPICS` | **Ads SDK** (Privacy Sandbox) | Normal permission, no runtime prompt |
+| `org.softosaurus.reactionspeed.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | AndroidX core | Signature-level, internal to the app |
+
+### What the SDK-contributed permissions mean for Data safety
+
+None of these four/seven are runtime (dangerous) permissions, so none of them produces a consent
+dialog and none of them appears in the Play Store's user-facing permission list as a sensitive
+item. They still matter for the form:
+
+- **`WAKE_LOCK` and `FOREGROUND_SERVICE`** are used internally by the Ads SDK for ad loading and
+  media playback. They do **not** add a new data type to declare. They are, however, a common
+  source of Play Console review questions ("why does a reaction-time game need a foreground
+  service?") — the answer is "it does not; the Google Mobile Ads SDK declares them", and no app
+  code starts a service or takes a wake lock.
+- **The three `ACCESS_ADSERVICES_*` permissions** are the Android Privacy Sandbox APIs (Topics,
+  Attribution Reporting, Ad ID). They are the mechanism behind the **Advertising ID** and
+  **App activity** rows already declared in the table at the top of this document — they do not
+  introduce a data type beyond those, but they are the concrete reason why "Device or other IDs →
+  Advertising ID → Collected: Yes, Shared: Yes" must be answered Yes even though this app's own
+  code never reads an advertising identifier.
+- Practical consequence: **do not** answer "No" to the Advertising ID question on the grounds
+  that the app's own source does not touch it. Play Console cross-checks the declaration against
+  the merged manifest and will reject the mismatch.
+
+### Init providers in the merged manifest
+
+The merged release manifest also carries `MobileAdsInitProvider`, `PlayGamesInitProvider` and
+AndroidX's `InitializationProvider`. `PlayGamesInitProvider` is present **even though
+`game_services_project_id` is still blank** in `games-ids.xml`; it is a no-op in that state (see
+the release smoke test notes), so shipping without the Play Games export is safe — Play Games
+features simply stay off.

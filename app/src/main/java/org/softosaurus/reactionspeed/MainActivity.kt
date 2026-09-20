@@ -33,6 +33,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Idempotent: a no-op unless a previous consent attempt genuinely failed, in which case
+        // this is the retry that gets the process its ads back.
+        AdsManager.start(this)
         PlayGamesLocator.managerOrNull()?.onActivityStart(this)
     }
 

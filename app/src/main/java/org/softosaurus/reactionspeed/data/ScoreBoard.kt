@@ -24,15 +24,19 @@ data class ScoreBoard(
     /**
      * Adds one finished series.
      *
-     * @param scoreMs the official score of the series (filtered mean)
+     * A degenerate series (every attempt measured as 0 ms, which a pathological clock or a
+     * synthetic event stream can produce) must not take the app down on the way to the result
+     * screen, so the score is clamped to 1 ms rather than rejected.
+     *
+     * @param scoreMs the official score of the series (filtered mean), clamped to at least 1
      * @param bestSingleMs fastest single attempt of that series, or `null` if not available
      */
     fun withSeries(scoreMs: Int, bestSingleMs: Int? = null): ScoreBoard {
-        require(scoreMs > 0) { "score must be positive" }
-        val newHistory = (history + scoreMs).takeLast(MAX_HISTORY)
+        val score = scoreMs.coerceAtLeast(1)
+        val newHistory = (history + score).takeLast(MAX_HISTORY)
         val newBestSingle = listOfNotNull(this.bestSingleMs, bestSingleMs?.takeIf { it > 0 }).minOrNull()
         return copy(
-            top10 = topOf(top10 + scoreMs),
+            top10 = topOf(top10 + score),
             history = newHistory,
             bestSingleMs = newBestSingle,
             seriesCount = seriesCount + 1,

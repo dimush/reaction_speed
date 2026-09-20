@@ -84,10 +84,23 @@ class GameEngine(
     /** Target radius in px for the current playfield, or `null` if no playfield is set. */
     val targetRadiusPx: Float? get() = playfield?.let { targetRadius(it) }
 
-    /** Sets or updates the playfield. A target already on screen is left where it is. */
+    /**
+     * Sets or updates the playfield.
+     *
+     * A target already on screen is **clamped into the new safe area** (and its radius recomputed
+     * for the new field): a resize mid-series — split-screen, an unfold, the ad band appearing —
+     * would otherwise leave the target at coordinates that are now off-surface or behind a system
+     * bar, and the series could never be finished because the target could never be tapped.
+     *
+     * A hidden target needs no such care: [GamePhase.Waiting] carries no geometry and
+     * [spawnTarget] reads the playfield fresh when the delay expires.
+     */
     fun setField(width: Float, height: Float, insets: Insets = Insets.NONE) {
         require(width > 0f && height > 0f) { "playfield must have a positive size" }
-        playfield = Field(width, height, insets)
+        val field = Field(width, height, insets)
+        playfield = field
+        val visible = phase as? GamePhase.TargetVisible ?: return
+        phase = visible.copy(target = clampIntoField(visible.target, field))
     }
 
     /**
@@ -233,16 +246,8 @@ class GameEngine(
     private fun spawnTarget(): Target {
         val f = checkNotNull(playfield) { "no playfield" }
         val r = targetRadius(f)
-        val minX = f.insets.left + r
-        val maxX = f.width - f.insets.right - r
-        val minY = f.insets.top + r
-        val maxY = f.height - f.insets.bottom - r
-        if (maxX <= minX || maxY <= minY) {
-            // Degenerate playfield (insets eat everything): fall back to the centre of the safe area.
-            val cx = (f.insets.left + f.width - f.insets.right) / 2f
-            val cy = (f.insets.top + f.height - f.insets.bottom) / 2f
-            return Target(cx, cy, r)
-        }
+        val bounds = safeBounds(f, r) ?: return degenerateCentre(f, r)
+        val (minX, minY, maxX, maxY) = bounds
 
         val exclusion = r * config.exclusionFactor
         var bestX = 0f
@@ -261,6 +266,43 @@ class GameEngine(
         }
         return Target(bestX, bestY, r)
     }
+
+    /**
+     * The rectangle of legal target *centres* for [f] and radius [r], or `null` when the insets
+     * eat the whole field.
+     */
+    private fun safeBounds(f: Field, r: Float): Bounds? {
+        val minX = f.insets.left + r
+        val maxX = f.width - f.insets.right - r
+        val minY = f.insets.top + r
+        val maxY = f.height - f.insets.bottom - r
+        return if (maxX <= minX || maxY <= minY) null else Bounds(minX, minY, maxX, maxY)
+    }
+
+    /** Degenerate playfield (insets eat everything): fall back to the centre of the safe area. */
+    private fun degenerateCentre(f: Field, r: Float) = Target(
+        x = (f.insets.left + f.width - f.insets.right) / 2f,
+        y = (f.insets.top + f.height - f.insets.bottom) / 2f,
+        radiusPx = r,
+    )
+
+    /** Moves [target] into the safe area of [f] and gives it the radius that field implies. */
+    private fun clampIntoField(target: Target, f: Field): Target {
+        val r = targetRadius(f)
+        val b = safeBounds(f, r) ?: return degenerateCentre(f, r)
+        return Target(
+            x = target.x.coerceIn(b.minX, b.maxX),
+            y = target.y.coerceIn(b.minY, b.maxY),
+            radiusPx = r,
+        )
+    }
+
+    private data class Bounds(
+        val minX: Float,
+        val minY: Float,
+        val maxX: Float,
+        val maxY: Float,
+    )
 
     /** Chebyshev distance to the last touch point, or +inf when there was none. */
     private fun separationFromLastTouch(x: Float, y: Float): Float {
