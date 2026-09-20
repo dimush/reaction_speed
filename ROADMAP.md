@@ -53,8 +53,8 @@
 - [x] `ResultsRepository` + миграция legacy prefs + тест миграции.
 
 ### Фаза 3 — UI-оболочка (Sonnet, после Фазы 2)
-- [~] Compose/M3: Home, Result, Stats (график), Settings; edge-to-edge; predictive back; тема.
-- [ ] Локализации en / ru / de; все строки из ресурсов.
+- [x] Compose/M3: Home, Result, Stats (график), Settings; edge-to-edge; predictive back; тема.
+- [x] Локализации en / ru / de; все строки из ресурсов.
 - [x] Адаптивная иконка + monochrome; splash (core-splashscreen).
 
 ### Фаза 4 — Play Games Services (Opus — код; пользователь/Chrome — консоль)
@@ -65,13 +65,13 @@
 
 ### Фаза 5 — Реклама и приватность (Sonnet)
 - [x] play-services-ads (актуальная) + UMP consent flow, adaptive anchored banner, пункт «Privacy options» в Settings.
-- [ ] Убрать ссылку на Pro. Проверить манифест (AD_ID, INTERNET), политику конфиденциальности, Data safety заметки → `docs/STORE_CHECKLIST.md`.
+- [x] Убрать ссылку на Pro. Проверить манифест (AD_ID, INTERNET), политику конфиденциальности, Data safety заметки → `docs/STORE_CHECKLIST.md`.
 
 ### Фаза 6 — QA и релиз
-- [ ] Unit-тесты + lint зелёные; code review (Opus) всего диффа; security review.
+- [~] Unit-тесты + lint зелёные; code review (Opus) всего диффа; security review.
 - [ ] Smoke на эмуляторе `Medium_Phone_API_36.0`: запуск, серия, миграция данных поверх старой версии 3.0, скриншоты.
 - [ ] Release AAB, подпись, `node tool/play_upload.mjs --track internal`.
-- [ ] Release notes en/ru/de; обновить README.
+- [x] Release notes en/ru/de; обновить README.
 - [!] Подтверждение пользователя → promote в production.
 
 ## Журнал
@@ -79,3 +79,4 @@
 - 2026-09-20 — Роадмап создан, решения согласованы. Окружение: JDK 21, SDK 36, AVD есть, ключ Play API и keystore на месте.
 - 2026-09-20 — Фазы 0–1 готовы; ядро + репозиторий + миграция готовы (44 unit-теста зелёные). minSdk поднят 23→24 (требование play-services-ads 25.x). Иконка готова (splash — в Фазе 3). Запущены параллельно: GameView (Opus), PlayGamesManager (Opus), Ads/UMP (Sonnet); UI-оболочка стартует после них, чтобы интегрировать реальные API.
 - 2026-09-20 — GameView, PlayGamesManager (+AchievementRules), Ads/UMP готовы, 75 unit-тестов. Play API: в production лежит versionCode 10 «3.1» → наш код 11. Play App Signing включён, upload-key SHA-1 совпадает с локальным keystore. Pro-версия удалена Google — ссылку убираем. Добавлен tool/play_status.mjs (read-only статус треков). Идёт интеграция UI (Opus) + проверка на эмуляторе; затем локализация ru/de (Sonnet), ревью (Opus), загрузка в internal.
+- 2026-09-20 — UI-оболочка (Compose/M3) интегрирована, legacy Java удалён, миграция данных проверена на эмуляторе, R8-релиз запускается (добавлены keep-правила для WorkManager/Room). Локализации ru/de, release notes, черновики листинга (store/listing). Privacy URL взят из живого листинга. Ревью (Opus): 18 находок → tool/play_upload.mjs обезврежен (--track обязателен, статус по умолчанию draft); остальные исправляет Opus-агент (стрендинг цели при ресайзе, защита от случайных кликов по баннеру, backup legacy-prefs, запись результата в момент финиша, один AdView на activity и др.).

@@ -2,8 +2,9 @@
 // Upload an AAB to a Play Console track via the Android Publisher API.
 // No dependencies: the service-account JWT is signed with node:crypto.
 //
-//   node tool/play_upload.mjs --track production [--aab path] [--status draft|completed]
+//   node tool/play_upload.mjs --track internal|alpha|beta|production [--aab path] [--status draft|completed]
 //                             [--notes-dir dir] [--key path]
+// --track is mandatory; --status defaults to draft, so going live always takes an explicit `--status completed`.
 //
 // Key file: --key, else $PLAY_SERVICE_ACCOUNT_JSON, else
 // %USERPROFILE%/.secrets/ohmyfridge-play-publisher.json. Never inside the repo.
@@ -19,8 +20,13 @@ const PACKAGE = 'org.softosaurus.reactionspeed';
 const API = 'https://androidpublisher.googleapis.com';
 
 const args = parseArgs(process.argv.slice(2));
-const track = args.track ?? 'production';
-const status = args.status ?? 'completed';
+const KNOWN_ARGS = ['track', 'status', 'aab', 'notes-dir', 'key', 'name'];
+const unknown = Object.keys(args).filter((k) => !KNOWN_ARGS.includes(k));
+if (unknown.length) throw new Error(`Unknown option(s): ${unknown.map((k) => '--' + k).join(', ')}`);
+if (typeof args.track !== 'string') throw new Error('--track is required (internal | alpha | beta | production)');
+const track = args.track;
+const status = args.status ?? 'draft';
+if (!['draft', 'completed'].includes(status)) throw new Error('--status must be draft or completed');
 const aabPath = resolve(args.aab ?? 'app/build/outputs/bundle/release/app-release.aab');
 const keyPath = args.key ?? process.env.PLAY_SERVICE_ACCOUNT_JSON
   ?? join(homedir(), '.secrets', 'ohmyfridge-play-publisher.json');
