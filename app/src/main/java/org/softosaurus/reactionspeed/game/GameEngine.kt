@@ -150,7 +150,8 @@ class GameEngine(
      * * [GamePhase.Waiting] — false start: the counter grows and the pending delay is re-randomised
      *   from [eventTimeMs], so the player cannot spam the screen into a fast time.
      * * [GamePhase.TargetVisible] — a hit within the forgiving radius records the reaction time and
-     *   moves on; anything else is counted as a miss and otherwise ignored.
+     *   moves on; anything else is counted as a miss and otherwise ignored. A touch whose
+     *   [eventTimeMs] predates the target's presentation time is a false start, not a 0 ms hit.
      * * [GamePhase.Idle] / [GamePhase.Finished] — ignored entirely (no miss, no false start).
      */
     fun onTouch(x: Float, y: Float, eventTimeMs: Long): List<GameEvent> {
@@ -169,6 +170,16 @@ class GameEngine(
             }
 
             is GamePhase.TargetVisible -> {
+                if (eventTimeMs < p.presentedAtMs) {
+                    // The tap physically happened before the frame carrying the target was posted
+                    // (it was sitting in the input queue while the renderer drew, or
+                    // markTargetPresented moved the baseline forward afterwards). Scoring it would
+                    // hand out a ~0 ms "reaction"; it is a false start, exactly as it would have
+                    // been one millisecond earlier.
+                    falseStartCount++
+                    phase = beginWait(p.attemptIndex, eventTimeMs)
+                    return emit(listOf(GameEvent.FalseStart(p.attemptIndex, falseStartCount)))
+                }
                 if (!isHit(p.target, x, y)) {
                     missCount++
                     return emit(listOf(GameEvent.Miss(p.attemptIndex, missCount)))

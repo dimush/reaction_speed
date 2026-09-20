@@ -40,31 +40,31 @@
 ## Фазы
 
 ### Фаза 0 — Гигиена репозитория
-- [ ] Ветка `modernize-4.0`; `.gitignore` (keystore.properties, build/, local.properties, *.aab); убрать мусор из индекса (`app/release/*.aab`, `.iml`, `import-summary.txt`); коммит текущего состояния.
+- [x] Ветка `modernize-4.0`; `.gitignore` (keystore.properties, build/, local.properties, *.aab); убрать мусор из индекса (`app/release/*.aab`, `.iml`, `import-summary.txt`); коммит текущего состояния.
 
 ### Фаза 1 — Сборка (Sonnet)
-- [ ] Перевод на Kotlin DSL + version catalog, AGP 9.2.1 / Gradle 9.4.1, SDK 36, minSdk 24.
-- [ ] versionCode 10, versionName 4.0 в gradle; signingConfig из `keystore.properties`; R8 + shrinkResources.
-- [ ] `./gradlew assembleDebug` зелёный на существующем Java-коде (точка отсчёта).
+- [x] Перевод на Kotlin DSL + version catalog, AGP 9.2.1 / Gradle 9.4.1, SDK 36, minSdk 24.
+- [x] versionCode 10, versionName 4.0 в gradle; signingConfig из `keystore.properties`; R8 + shrinkResources.
+- [x] `./gradlew assembleDebug` зелёный на существующем Java-коде (точка отсчёта).
 
 ### Фаза 2 — Игровое ядро (Opus)
-- [ ] `GameEngine` на Kotlin + unit-тесты (тайминг, фальстарт, СКО-фильтр, top-10, история).
-- [ ] `GameView` — рендер, анимации плит/валуна, звук (SoundPool.Builder), вибрация (VibrationEffect), корректный stop/start потока.
-- [ ] `ResultsRepository` + миграция legacy prefs + тест миграции.
+- [x] `GameEngine` на Kotlin + unit-тесты (тайминг, фальстарт, СКО-фильтр, top-10, история).
+- [~] `GameView` — рендер, анимации плит/валуна, звук (SoundPool.Builder), вибрация (VibrationEffect), корректный stop/start потока.
+- [x] `ResultsRepository` + миграция legacy prefs + тест миграции.
 
 ### Фаза 3 — UI-оболочка (Sonnet, после Фазы 2)
 - [ ] Compose/M3: Home, Result, Stats (график), Settings; edge-to-edge; predictive back; тема.
 - [ ] Локализации en / ru / de; все строки из ресурсов.
-- [ ] Адаптивная иконка + monochrome; splash (core-splashscreen).
+- [x] Адаптивная иконка + monochrome; splash (core-splashscreen).
 
 ### Фаза 4 — Play Games Services (Opus — код; пользователь/Chrome — консоль)
-- [ ] `PlayGamesManager` (PGS v2 SDK), отправка очков/достижений, кнопки «Лидерборды» / «Достижения».
+- [~] `PlayGamesManager` (PGS v2 SDK), отправка очков/достижений, кнопки «Лидерборды» / «Достижения».
 - [ ] `games-ids.xml` с плейсхолдерами; graceful-off без id.
 - [!] Настройка в Play Console: проект Play Games, OAuth-клиенты (SHA-1 upload key + app signing key), 2 доски, достижения, публикация PGS-проекта. → `docs/PLAY_GAMES_SETUP.md`
 - [ ] Вписать реальные id, проверить на устройстве/эмуляторе с тестовым аккаунтом.
 
 ### Фаза 5 — Реклама и приватность (Sonnet)
-- [ ] play-services-ads (актуальная) + UMP consent flow, adaptive anchored banner, пункт «Privacy options» в Settings.
+- [~] play-services-ads (актуальная) + UMP consent flow, adaptive anchored banner, пункт «Privacy options» в Settings.
 - [ ] Убрать ссылку на Pro. Проверить манифест (AD_ID, INTERNET), политику конфиденциальности, Data safety заметки → `docs/STORE_CHECKLIST.md`.
 
 ### Фаза 6 — QA и релиз
@@ -77,3 +77,4 @@
 ## Журнал
 
 - 2026-09-20 — Роадмап создан, решения согласованы. Окружение: JDK 21, SDK 36, AVD есть, ключ Play API и keystore на месте.
+- 2026-09-20 — Фазы 0–1 готовы; ядро + репозиторий + миграция готовы (44 unit-теста зелёные). minSdk поднят 23→24 (требование play-services-ads 25.x). Иконка готова (splash — в Фазе 3). Запущены параллельно: GameView (Opus), PlayGamesManager (Opus), Ads/UMP (Sonnet); UI-оболочка стартует после них, чтобы интегрировать реальные API.

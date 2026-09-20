@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Play Games Services resource ids.
+
+  PLACEHOLDERS ONLY. This whole file is meant to be REPLACED wholesale by the export that
+  Play Console generates: Play Games Services -> Setup and management -> Configuration ->
+  "Get resources" (see docs/PLAY_GAMES_SETUP.md). That export uses exactly these resource
+  names, so nothing else in the app has to change once it is pasted in.
+
+  An EMPTY game_services_project_id means "Play Games is not configured yet":
+  PlayGamesManager.isConfigured is then false and every Play Games call is a no-op
+  (PlayGamesSdk.initialize() is never called, no client is ever touched).
+  Individual leaderboard/achievement ids that are still empty are skipped the same way.
+-->
+<resources>
+
+    <!-- app_id -->
+    <string name="game_services_project_id" translatable="false"></string>
+
+    <!-- package_name -->
+    <string name="package_name" translatable="false">org.softosaurus.reactionspeed</string>
+
+    <!-- leaderboard Best average (10 taps) -->
+    <string name="leaderboard_best_average" translatable="false"></string>
+    <!-- leaderboard Fastest single tap -->
+    <string name="leaderboard_best_single" translatable="false"></string>
+
+    <!-- achievement First Series -->
+    <string name="achievement_first_series" translatable="false"></string>
+    <!-- achievement Quick (< 350 ms) -->
+    <string name="achievement_under_350" translatable="false"></string>
+    <!-- achievement Fast (< 300 ms) -->
+    <string name="achievement_under_300" translatable="false"></string>
+    <!-- achievement Lightning (< 250 ms) -->
+    <string name="achievement_under_250" translatable="false"></string>
+    <!-- achievement Superhuman (< 220 ms) -->
+    <string name="achievement_under_220" translatable="false"></string>
+    <!-- achievement Regular - 10 series -->
+    <string name="achievement_series_10" translatable="false"></string>
+    <!-- achievement Devoted - 50 series -->
+    <string name="achievement_series_50" translatable="false"></string>
+    <!-- achievement Veteran - 200 series -->
+    <string name="achievement_series_200" translatable="false"></string>
+    <!-- achievement Steady Hand -->
+    <string name="achievement_steady_hand" translatable="false"></string>
+    <!-- achievement Flawless -->
+    <string name="achievement_flawless" translatable="false"></string>
+
+</resources>
