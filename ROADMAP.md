@@ -13,7 +13,7 @@
 ## Целевая архитектура
 
 - Toolchain (проверен на соседнем проекте BlaBlarium): AGP 9.2.1, Gradle 9.4.1, Kotlin 2.2.10,
-  Compose BOM 2026.02.01, version catalog, compileSdk/targetSdk 36, minSdk 23, JDK 21.
+  Compose BOM 2026.02.01, version catalog, compileSdk/targetSdk 36, minSdk 24, JDK 21.
 - Один модуль `app`, пакет `org.softosaurus.reactionspeed`, single-activity:
   - `game/` — `GameEngine` (чистая Kotlin-логика без Android: state machine, тайминг, подсчёт
     результата с отсечением выбросов по СКО — как в оригинале), покрыта unit-тестами;
@@ -43,7 +43,7 @@
 - [ ] Ветка `modernize-4.0`; `.gitignore` (keystore.properties, build/, local.properties, *.aab); убрать мусор из индекса (`app/release/*.aab`, `.iml`, `import-summary.txt`); коммит текущего состояния.
 
 ### Фаза 1 — Сборка (Sonnet)
-- [ ] Перевод на Kotlin DSL + version catalog, AGP 9.2.1 / Gradle 9.4.1, SDK 36, minSdk 23.
+- [ ] Перевод на Kotlin DSL + version catalog, AGP 9.2.1 / Gradle 9.4.1, SDK 36, minSdk 24.
 - [ ] versionCode 10, versionName 4.0 в gradle; signingConfig из `keystore.properties`; R8 + shrinkResources.
 - [ ] `./gradlew assembleDebug` зелёный на существующем Java-коде (точка отсчёта).
 

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108"
+                android:startColor="#2E7D32"
+                android:endColor="#1B5E20" />
+        </aapt:attr>
+    </path>
+
+    <!-- subtle grass-texture blades for extra depth, kept out of the safe zone corners -->
+    <path
+        android:pathData="M6,100 L9,86 L12,100 Z"
+        android:fillColor="#144D17"
+        android:fillAlpha="0.55" />
+    <path
+        android:pathData="M14,102 L17,90 L20,102 Z"
+        android:fillColor="#144D17"
+        android:fillAlpha="0.45" />
+    <path
+        android:pathData="M92,10 L95,-2 L98,10 Z"
+        android:fillColor="#3E8E41"
+        android:fillAlpha="0.35" />
+    <path
+        android:pathData="M100,8 L103,-4 L106,8 Z"
+        android:fillColor="#3E8E41"
+        android:fillAlpha="0.30" />
+</vector>

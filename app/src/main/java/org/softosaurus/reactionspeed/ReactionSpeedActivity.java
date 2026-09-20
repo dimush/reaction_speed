@@ -116,28 +116,25 @@ public class ReactionSpeedActivity extends Activity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		switch(item.getItemId()) {
-			case R.id.cleanHistItem: {
-				msv.clearBestResults();
-				if(msv.getTop10_state() == 2) {
-					msv.setTop10_state(3);
-				}
-				return true;
+		int id = item.getItemId();
+		if (id == R.id.cleanHistItem) {
+			msv.clearBestResults();
+			if(msv.getTop10_state() == 2) {
+				msv.setTop10_state(3);
 			}
-			case R.id.optionsItem: {
-				Intent intent = new Intent(this, OptionsActivity.class);
-				intent.putExtra("use_target_sounds", msv.useTargetSounds);
-				intent.putExtra("use_stone_sounds", msv.useStoneSounds);
-				intent.putExtra("use_vibrator", msv.useVibrator);
-				this.startActivityForResult(intent, SHOW_OPTIONS);
-				return true;
-			}
-			case R.id.buyItem: {
-				Intent intent = new Intent(Intent.ACTION_VIEW); 
-				intent.setData(Uri.parse("market://details?id=org.softosaurus.reactionspeedpro")); 
-				startActivity(intent);
-				return true;
-			}
+			return true;
+		} else if (id == R.id.optionsItem) {
+			Intent intent = new Intent(this, OptionsActivity.class);
+			intent.putExtra("use_target_sounds", msv.useTargetSounds);
+			intent.putExtra("use_stone_sounds", msv.useStoneSounds);
+			intent.putExtra("use_vibrator", msv.useVibrator);
+			this.startActivityForResult(intent, SHOW_OPTIONS);
+			return true;
+		} else if (id == R.id.buyItem) {
+			Intent intent = new Intent(Intent.ACTION_VIEW);
+			intent.setData(Uri.parse("market://details?id=org.softosaurus.reactionspeedpro"));
+			startActivity(intent);
+			return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}
