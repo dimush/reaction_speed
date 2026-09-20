@@ -61,16 +61,16 @@
 - [x] `PlayGamesManager` (PGS v2 SDK), отправка очков/достижений, кнопки «Лидерборды» / «Достижения».
 - [x] `games-ids.xml` с плейсхолдерами; graceful-off без id.
 - [!] Настройка в Play Console: проект Play Games, OAuth-клиенты (SHA-1 upload key + app signing key), 2 доски, достижения, публикация PGS-проекта. → `docs/PLAY_GAMES_SETUP.md`
-- [ ] Вписать реальные id, проверить на устройстве/эмуляторе с тестовым аккаунтом.
+- [!] Вписать реальные id (после настройки консоли) → сборка versionCode 12 →, проверить на устройстве/эмуляторе с тестовым аккаунтом.
 
 ### Фаза 5 — Реклама и приватность (Sonnet)
 - [x] play-services-ads (актуальная) + UMP consent flow, adaptive anchored banner, пункт «Privacy options» в Settings.
 - [x] Убрать ссылку на Pro. Проверить манифест (AD_ID, INTERNET), политику конфиденциальности, Data safety заметки → `docs/STORE_CHECKLIST.md`.
 
 ### Фаза 6 — QA и релиз
-- [~] Unit-тесты + lint зелёные; code review (Opus) всего диффа; security review.
-- [ ] Smoke на эмуляторе `Medium_Phone_API_36.0`: запуск, серия, миграция данных поверх старой версии 3.0, скриншоты.
-- [ ] Release AAB, подпись, `node tool/play_upload.mjs --track internal`.
+- [x] Unit-тесты + lint зелёные; code review (Opus) всего диффа; security review.
+- [x] Smoke на эмуляторе `Medium_Phone_API_36.0`: запуск, серия, миграция данных поверх старой версии 3.0, скриншоты.
+- [x] Release AAB, подпись, `node tool/play_upload.mjs --track internal`.
 - [x] Release notes en/ru/de; обновить README.
 - [!] Подтверждение пользователя → promote в production.
 
@@ -80,3 +80,4 @@
 - 2026-09-20 — Фазы 0–1 готовы; ядро + репозиторий + миграция готовы (44 unit-теста зелёные). minSdk поднят 23→24 (требование play-services-ads 25.x). Иконка готова (splash — в Фазе 3). Запущены параллельно: GameView (Opus), PlayGamesManager (Opus), Ads/UMP (Sonnet); UI-оболочка стартует после них, чтобы интегрировать реальные API.
 - 2026-09-20 — GameView, PlayGamesManager (+AchievementRules), Ads/UMP готовы, 75 unit-тестов. Play API: в production лежит versionCode 10 «3.1» → наш код 11. Play App Signing включён, upload-key SHA-1 совпадает с локальным keystore. Pro-версия удалена Google — ссылку убираем. Добавлен tool/play_status.mjs (read-only статус треков). Идёт интеграция UI (Opus) + проверка на эмуляторе; затем локализация ru/de (Sonnet), ревью (Opus), загрузка в internal.
 - 2026-09-20 — UI-оболочка (Compose/M3) интегрирована, legacy Java удалён, миграция данных проверена на эмуляторе, R8-релиз запускается (добавлены keep-правила для WorkManager/Room). Локализации ru/de, release notes, черновики листинга (store/listing). Privacy URL взят из живого листинга. Ревью (Opus): 18 находок → tool/play_upload.mjs обезврежен (--track обязателен, статус по умолчанию draft); остальные исправляет Opus-агент (стрендинг цели при ресайзе, защита от случайных кликов по баннеру, backup legacy-prefs, запись результата в момент финиша, один AdView на activity и др.).
+- 2026-09-21 — Все находки ревью исправлены и проверены на эмуляторе (81 unit-тест, lint 0 ошибок). **versionCode 11 (4.0) загружен в internal testing** (AAB 6.8 МБ). Осталось (ждёт пользователя): 1) настройка Play Games в консоли → реальные `games-ids.xml` → сборка 12; 2) проверка баннера/UMP на реальном устройстве (эмулятор не достучался до UMP); 3) «да» на production.
