@@ -1,0 +1,3 @@
+• Updated for Android 16
+• Ads consent dialog where required by law
+• Smaller download, fixes for modern devices
