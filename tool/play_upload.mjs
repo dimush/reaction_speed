@@ -101,7 +101,7 @@ async function loadNotes(dir) {
 }
 
 async function gradleVersionName() {
-  const m = (await readFile('app/build.gradle', 'utf8')).match(/versionName\s+"([^"]+)"/);
+  const m = (await readFile('app/build.gradle.kts', 'utf8')).match(/versionName\s*=\s*"([^"]+)"/);
   return m ? m[1] : '';
 }
 
