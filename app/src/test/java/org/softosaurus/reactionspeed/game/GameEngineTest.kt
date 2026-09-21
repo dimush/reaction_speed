@@ -218,7 +218,7 @@ class GameEngineTest {
     @Test
     fun `target radius follows the shorter field dimension`() {
         val engine = engine()
-        assertEquals(width / 16f, engine.targetRadiusPx!!, 1e-4f)
+        assertEquals(width * 0.13f, engine.targetRadiusPx!!, 1e-3f)
     }
 
     /** The rejection loop must terminate even when no candidate can satisfy the exclusion zone. */

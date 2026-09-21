@@ -44,9 +44,10 @@ data class Target(
 /**
  * Tunables of the game. Defaults reproduce the legacy 3.x behaviour.
  *
- * Legacy geometry recap (`MySurfaceView`): the canvas was rotated, `h = canvasHeight / 2`, and
- * `target_r = h / 8`, i.e. one sixteenth of the shorter screen dimension on a portrait phone —
- * hence [targetRadiusFactor] is applied to `min(width, height)`.
+ * Legacy geometry recap (`MySurfaceView`): `h = canvasHeight / 2` and `target_r = h / 8`, i.e. one
+ * sixteenth of the screen *height* — about 0.13–0.14 of the width on a portrait phone. The factor is
+ * expressed against `min(width, height)` so the target keeps a sensible size in split-screen and on
+ * tablets, where a height-based radius would balloon or shrink.
  *
  * @param attemptsPerSeries number of targets in one series (legacy: 10)
  * @param minDelayMs lower bound of the random hide delay (legacy: 500)
@@ -67,7 +68,7 @@ data class GameConfig(
     val attemptsPerSeries: Int = 10,
     val minDelayMs: Long = 500L,
     val maxDelayMs: Long = 3500L,
-    val targetRadiusFactor: Float = 1f / 16f,
+    val targetRadiusFactor: Float = 0.13f,
     val hitRadiusFactor: Float = 2f,
     val exclusionFactor: Float = 4f,
     val maxSpawnAttempts: Int = 50,

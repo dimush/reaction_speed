@@ -18,8 +18,8 @@
     <!-- Spoken when the home mascot is tapped; it is interactive, so it is not decorative. -->
     <string name="home_mascot_description">Softosaurus mascot. Tap to say hello.</string>
     <string name="home_how_to_play">Ten targets appear one after another, each after a random
-        pause. Tap each one as fast as you can. Your score is the average of the ten taps, with the
-        slowest and fastest outliers dropped.</string>
+        pause. Tap each one as fast as you can. Your score is the average of the ten taps; unusually
+        slow taps are dropped as outliers.</string>
     <string name="home_best_average">Best average</string>
     <string name="home_best_single">Best single</string>
     <string name="home_series">Series</string>

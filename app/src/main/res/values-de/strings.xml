@@ -17,8 +17,7 @@
     <string name="home_mascot_description">Softosaurus-Maskottchen. Zum Begrüßen antippen.</string>
     <string name="home_how_to_play">Zehn Ziele erscheinen nacheinander, jeweils nach einer
         zufälligen Pause. Tippe so schnell wie möglich auf jedes. Dein Ergebnis ist der
-        Durchschnitt der zehn Versuche, wobei der schnellste und der langsamste Ausreißer
-        nicht mitzählen.</string>
+        Durchschnitt der zehn Versuche; ungewöhnlich langsame Tipps zählen als Ausreißer nicht mit.</string>
     <string name="home_best_average">Bester Durchschnitt</string>
     <string name="home_best_single">Bester Einzelwert</string>
     <string name="home_series">Serien</string>

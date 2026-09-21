@@ -16,7 +16,7 @@
     <string name="home_mascot_description">Маскот Софтозавр. Коснитесь, чтобы поздороваться.</string>
     <string name="home_how_to_play">Десять целей появляются одна за другой, каждая после
         случайной паузы. Коснитесь каждой как можно быстрее. Результат — среднее из десяти
-        касаний без учёта самого быстрого и самого медленного.</string>
+        касаний; необычно медленные касания отбрасываются как выбросы.</string>
     <string name="home_best_average">Лучшее среднее</string>
     <string name="home_best_single">Лучшая реакция</string>
     <string name="home_series">Серий</string>
