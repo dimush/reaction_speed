@@ -10,3 +10,5 @@
 *.aab
 *.apk
 *.jks
+/tool/audio/.venv-tts/
+/tool/audio/recordings/_alternates/

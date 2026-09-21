@@ -1,0 +1,4 @@
+# working files of the audio pipeline - regenerate with voices.ps1 / analyze.py
+_raw_tts/
+_preview/
+__pycache__/

@@ -1,0 +1,50 @@
+{
+  "_comment": "Line table for the voice pipeline. 'character' picks the DSP chain in voices_post.py; 'rate'/'pitch'/'emphasis' steer the SAPI raw take (ignored for neural/real recordings).",
+  "languages": {
+    "en": { "culture": "en-US", "voice": "Microsoft Zira Desktop", "dir": "raw" },
+    "de": { "culture": "de-DE", "voice": "Microsoft Hedda Desktop", "dir": "raw-de" },
+    "ru": { "culture": "ru-RU", "voice": "Microsoft Irina Desktop", "dir": "raw-ru" }
+  },
+  "lines": [
+    {
+      "id": "voice_ready", "character": "SHOUTY",
+      "rate": -1, "pitch": "+15%", "emphasis": "strong",
+      "text": { "en": "Ready?", "de": "Bereit?", "ru": "Готов?" }
+    },
+    {
+      "id": "voice_too_early", "character": "GRUFF",
+      "rate": 1, "pitch": "-10%", "emphasis": "strong",
+      "text": { "en": "Too early!", "de": "Zu früh!", "ru": "Рано!" }
+    },
+    {
+      "id": "voice_tier_1", "character": "GRUFF",
+      "rate": -2, "pitch": "-15%", "emphasis": "moderate",
+      "text": { "en": "Keep practicing!", "de": "Weiter üben!", "ru": "Тренируйся!" }
+    },
+    {
+      "id": "voice_tier_2", "character": "SQUEAKY",
+      "rate": 0, "pitch": "+10%", "emphasis": "moderate",
+      "text": { "en": "Not bad!", "de": "Nicht schlecht!", "ru": "Неплохо!" }
+    },
+    {
+      "id": "voice_tier_3", "character": "SHOUTY",
+      "rate": 1, "pitch": "+15%", "emphasis": "strong",
+      "text": { "en": "Fast!", "de": "Schnell!", "ru": "Быстро!" }
+    },
+    {
+      "id": "voice_tier_4", "character": "SQUEAKY",
+      "rate": 2, "pitch": "+25%", "emphasis": "strong",
+      "text": { "en": "Lightning!", "de": "Blitzschnell!", "ru": "Молния!" }
+    },
+    {
+      "id": "voice_tier_5", "character": "SHOUTY",
+      "rate": 0, "pitch": "+20%", "emphasis": "strong",
+      "text": { "en": "Superhuman!", "de": "Übermenschlich!", "ru": "Невероятно!" }
+    },
+    {
+      "id": "voice_new_record", "character": "SHOUTY",
+      "rate": 0, "pitch": "+20%", "emphasis": "strong",
+      "text": { "en": "New record!", "de": "Neuer Rekord!", "ru": "Новый рекорд!" }
+    }
+  ]
+}
