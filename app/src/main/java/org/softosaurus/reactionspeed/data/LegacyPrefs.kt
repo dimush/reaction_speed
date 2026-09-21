@@ -37,9 +37,9 @@ object LegacyPrefs {
     const val KEY_BEST_PREFIX = "best_res"
     const val KEY_RES_SIZE = "res_size"
     const val KEY_RES_PREFIX = "res"
-    const val KEY_STONE_SOUNDS = "use_stone_sounds"
-    const val KEY_TARGET_SOUNDS = "use_target_sounds"
-    const val KEY_VIBRATOR = "use_vibrator"
+    const val KEY_STONE_SOUNDS = SettingsCodec.KEY_LEGACY_STONE_SOUNDS
+    const val KEY_TARGET_SOUNDS = SettingsCodec.KEY_LEGACY_TARGET_SOUNDS
+    const val KEY_VIBRATOR = SettingsCodec.KEY_LEGACY_VIBRATOR
 
     /** Sanity cap on the declared history length (legacy history grew one entry per series). */
     private const val MAX_DECLARED_HISTORY = 100_000
@@ -73,11 +73,8 @@ object LegacyPrefs {
         return LegacyData(
             top10 = top10,
             history = history,
-            settings = GameSettings(
-                targetSounds = booleanOr(raw[KEY_TARGET_SOUNDS], true),
-                stoneSounds = booleanOr(raw[KEY_STONE_SOUNDS], true),
-                vibration = booleanOr(raw[KEY_VIBRATOR], true),
-            ),
+            // The sound/haptics keys are shared with the 4.x file, so one codec reads both.
+            settings = SettingsCodec.read(raw),
         )
     }
 
@@ -108,9 +105,4 @@ object LegacyPrefs {
         else -> null
     }
 
-    private fun booleanOr(value: Any?, default: Boolean): Boolean = when (value) {
-        is Boolean -> value
-        is String -> value.toBooleanStrictOrNull() ?: default
-        else -> default
-    }
 }

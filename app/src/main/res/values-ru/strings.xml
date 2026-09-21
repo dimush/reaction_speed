@@ -13,6 +13,7 @@
     <!-- Home -->
     <string name="home_tagline">Коснитесь красной цели, как только она появится.</string>
     <string name="home_start">Старт</string>
+    <string name="home_mascot_description">Маскот Софтозавр. Коснитесь, чтобы поздороваться.</string>
     <string name="home_how_to_play">Десять целей появляются одна за другой, каждая после
         случайной паузы. Коснитесь каждой как можно быстрее. Результат — среднее из десяти
         касаний без учёта самого быстрого и самого медленного.</string>
@@ -108,9 +109,10 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_section_game">Игра</string>
     <string name="settings_section_about">О приложении</string>
-    <string name="use_target_sound">Звук цели</string>
-    <string name="use_stone_sounds">Звуки камня</string>
-    <string name="use_vibration">Вибрация</string>
+    <string name="settings_sound_effects">Звуковые эффекты</string>
+    <string name="settings_music">Музыка</string>
+    <string name="settings_voice">Голос</string>
+    <string name="settings_vibration">Вибрация</string>
     <string name="settings_privacy_options">Настройки конфиденциальности</string>
     <string name="settings_privacy_policy">Политика конфиденциальности</string>
     <string name="settings_rate">Оценить приложение</string>

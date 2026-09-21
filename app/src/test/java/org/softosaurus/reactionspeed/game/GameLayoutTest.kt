@@ -120,4 +120,68 @@ class GameLayoutTest {
         assertEquals(540f, hud.firstDotX, 1e-3f)
         assertTrue(hud.dotRadius > 0f)
     }
+
+    // --- the fairness invariants of the animated target -----------------------------------------
+
+    @Test
+    fun `the target is never smaller than the pop-in floor`() {
+        // The whole promise of the flourish and the idle wobble: they may enlarge or tilt the face,
+        // never shrink it below the size at which it must already be unmistakable.
+        for (ms in 0L..10_000L) {
+            val scale = GameLayout.targetScale(ms)
+            assertTrue(
+                "targetScale($ms) = $scale is below POP_START_SCALE",
+                scale >= GameLayout.POP_START_SCALE - 1e-4f,
+            )
+        }
+    }
+
+    @Test
+    fun `the first frame shows at least seventy percent`() {
+        assertEquals(GameLayout.POP_START_SCALE, GameLayout.targetScale(0L), 1e-4f)
+        assertTrue(GameLayout.POP_START_SCALE >= 0.7f)
+    }
+
+    @Test
+    fun `the pop-in itself is untouched by the garnish`() {
+        // Inside the pop window the decorated curve must be exactly the old one: the flourish and
+        // the wobble both start at zero amplitude when the pop finishes.
+        var ms = 0L
+        while (ms <= GameLayout.POP_DURATION_MS.toLong()) {
+            assertEquals(GameLayout.popScale(ms), GameLayout.targetScale(ms), 1e-4f)
+            ms += 1L
+        }
+    }
+
+    @Test
+    fun `the idle wobble stays subtle and the tilt is silent during the pop`() {
+        var ms = 0L
+        while (ms <= GameLayout.POP_DURATION_MS.toLong()) {
+            assertEquals(0f, GameLayout.targetTiltDegrees(ms), 1e-4f)
+            ms += 1L
+        }
+        for (later in 100L..8_000L step 7L) {
+            val tilt = GameLayout.targetTiltDegrees(later)
+            assertTrue("tilt $tilt too large", kotlin.math.abs(tilt) <= GameLayout.IDLE_TILT_DEGREES + 1e-4f)
+            val scale = GameLayout.targetScale(later)
+            // Never more than the flourish peak plus the breath above the nominal size either.
+            assertTrue("scale $scale too large", scale <= 1.2f)
+        }
+    }
+
+    @Test
+    fun `the struck face shrinks to nothing inside the hit effect`() {
+        assertTrue(GameLayout.hitScaleX(0f) > GameLayout.hitScaleY(0f)) // squashed wide on impact
+        assertEquals(0f, GameLayout.hitScaleX(1f), 1e-4f)
+        assertEquals(0f, GameLayout.hitScaleY(1f), 1e-4f)
+        assertEquals(0f, GameLayout.hitSpinDegrees(0f), 1e-4f)
+        assertEquals(GameLayout.HIT_SPIN_DEGREES, GameLayout.hitSpinDegrees(1f), 1e-3f)
+    }
+
+    @Test
+    fun `particles die before the earliest possible next target`() {
+        // A leftover spark must never be on screen when the next stimulus appears.
+        assertTrue(GameLayout.PARTICLE_LIFETIME_MS <= GameConfig().minDelayMs.toFloat())
+        assertTrue(GameLayout.HIT_EFFECT_DURATION_MS <= GameConfig().minDelayMs.toFloat())
+    }
 }

@@ -236,13 +236,17 @@ def slice_s(x, a, b, sr=SR):
 
 
 def syllable_nuclei(x, sr=SR):
-    """Count energy-envelope peaks above a floor, separated by >=90 ms."""
+    """Count smoothed energy-envelope peaks above a floor, separated by >=130 ms.
+    The envelope is smoothed first, otherwise intra-phoneme ripple is counted."""
     np = _np()
     db, h = env_db(x, sr)
     if db.size < 3:
         return 0
-    floor = db.max() - 22.0
-    min_sep = max(1, int(0.09 * sr / h))
+    k = 5                                   # ~50 ms moving average
+    if db.size > k:
+        db = np.convolve(db, np.ones(k) / k, mode="same")
+    floor = db.max() - 18.0
+    min_sep = max(1, int(0.13 * sr / h))
     peaks, last = 0, -10 ** 9
     for i in range(1, db.size - 1):
         if db[i] >= floor and db[i] >= db[i - 1] and db[i] > db[i + 1] and (i - last) >= min_sep:
@@ -278,11 +282,23 @@ def f0_track(x, sr=SR, fmin=70.0, fmax=450.0):
 
 
 def f0_range_semitones(x, sr=SR):
+    """20th-80th percentile of a median-filtered, octave-error-guarded pitch
+    track, in semitones.  Autocorrelation halves/doubles easily, so frames more
+    than a major sixth from the track median are dropped before measuring."""
     np = _np()
     f = f0_track(x, sr)
+    if f.size < 5:
+        return 0.0
+    # 5-point median filter
+    pad = np.pad(f, 2, mode="edge")
+    f = np.array([np.median(pad[i:i + 5]) for i in range(f.size)])
+    med = float(np.median(f))
+    if med <= 0:
+        return 0.0
+    f = f[np.abs(12.0 * np.log2(f / med)) <= 9.0]     # drop octave jumps
     if f.size < 4:
         return 0.0
-    lo, hi = np.percentile(f, 10), np.percentile(f, 90)
+    lo, hi = np.percentile(f, 20), np.percentile(f, 80)
     if lo <= 0:
         return 0.0
     return float(12.0 * np.log2(hi / lo))
@@ -478,8 +494,8 @@ def score_take(x, meta, asr):
             s -= 2.0
         # syllable-nuclei agreement
         s -= min(3.0, 0.9 * m["nuclei_err"])
-        # expressiveness proxy: F0 range, rewarded up to ~10 semitones
-        s += min(2.0, m["f0_range_st"] / 5.0)
+        # expressiveness proxy: F0 range, rewarded up to ~8 semitones
+        s += min(2.0, m["f0_range_st"] / 4.0)
         # prefer the canonical wording
         if meta.get("canonical"):
             s += 0.6

@@ -108,9 +108,67 @@ object IntListCodec {
         raw?.split(',')?.mapNotNull { it.trim().toIntOrNull() }?.filter { it > 0 } ?: emptyList()
 }
 
-/** Sound and haptics preferences (legacy `use_*` keys). */
+/**
+ * Sound and haptics preferences.
+ *
+ * @param soundEffects target pops, hits, misses, jingles and the monster gibberish
+ * @param music the two background loops
+ * @param voice the localised spoken lines
+ * @param vibration the pulse when a target appears
+ */
 data class GameSettings(
-    val targetSounds: Boolean = true,
-    val stoneSounds: Boolean = true,
+    val soundEffects: Boolean = true,
+    val music: Boolean = true,
+    val voice: Boolean = true,
     val vibration: Boolean = true,
 )
+
+/**
+ * Reads [GameSettings] out of a raw preferences map, migrating anything an older version wrote.
+ *
+ * Pure and Android-free on purpose: the same code has to cope with three different shapes and each
+ * of them deserves a unit test rather than a device.
+ *
+ * 1. **4.1 and later** — [KEY_SOUND_EFFECTS], [KEY_MUSIC], [KEY_VOICE], [KEY_VIBRATION].
+ * 2. **4.0** (versionCode 11/12, which is what the owner's phone runs) — the new preferences file
+ *    but with the two old sound switches. Forgetting this case would silently reset the sound
+ *    preference of every existing player, which is why it is handled here and not only in
+ *    [LegacyPrefs].
+ * 3. **3.x** — the legacy file, same two sound switches plus `use_vibrator`.
+ *
+ * The rule for the merge is `use_target_sounds || use_stone_sounds → soundEffects`: a player who
+ * silenced only one of the two halves of the old sound design wanted *some* sound, so they keep it.
+ * A key that was never written counts as its old default (`true`), so only someone who deliberately
+ * turned both off arrives with effects disabled. Music and voice are new and default to on.
+ */
+object SettingsCodec {
+
+    const val KEY_SOUND_EFFECTS = "sound_effects"
+    const val KEY_MUSIC = "music"
+    const val KEY_VOICE = "voice"
+    const val KEY_VIBRATION = "use_vibration"
+
+    /** 3.x / 4.0 keys, read only. */
+    const val KEY_LEGACY_TARGET_SOUNDS = "use_target_sounds"
+    const val KEY_LEGACY_STONE_SOUNDS = "use_stone_sounds"
+
+    /** The 3.x spelling of [KEY_VIBRATION]. */
+    const val KEY_LEGACY_VIBRATOR = "use_vibrator"
+
+    fun read(raw: Map<String, *>): GameSettings = GameSettings(
+        soundEffects = boolOrNull(raw[KEY_SOUND_EFFECTS])
+            ?: ((boolOrNull(raw[KEY_LEGACY_TARGET_SOUNDS]) ?: true) ||
+                (boolOrNull(raw[KEY_LEGACY_STONE_SOUNDS]) ?: true)),
+        music = boolOrNull(raw[KEY_MUSIC]) ?: true,
+        voice = boolOrNull(raw[KEY_VOICE]) ?: true,
+        vibration = boolOrNull(raw[KEY_VIBRATION])
+            ?: boolOrNull(raw[KEY_LEGACY_VIBRATOR])
+            ?: true,
+    )
+
+    private fun boolOrNull(value: Any?): Boolean? = when (value) {
+        is Boolean -> value
+        is String -> value.toBooleanStrictOrNull()
+        else -> null
+    }
+}

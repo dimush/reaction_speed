@@ -14,6 +14,8 @@ import android.view.SurfaceView
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import org.softosaurus.reactionspeed.audio.Sound
+import org.softosaurus.reactionspeed.audio.SoundBank
 import org.softosaurus.reactionspeed.data.GameSettings
 
 /**
@@ -101,7 +103,6 @@ class GameView @JvmOverloads constructor(
 
     private val engine = GameEngine()
     private val renderer = GameRenderer(context)
-    private val audio = GameAudio(context)
     private val haptics = Haptics(context)
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -160,6 +161,17 @@ class GameView @JvmOverloads constructor(
     @Volatile
     var settings: GameSettings = GameSettings()
 
+    /**
+     * The app-wide sound bank, injected by the host.
+     *
+     * The playfield deliberately does **not** own it: the Compose screens click, cheer and speak
+     * through the same [SoundBank], and two `SoundPool`s in one process would fight over streams
+     * and double the memory for no benefit. `null` simply means silence, which keeps the view
+     * usable in isolation (a preview, a test host) without a sound stack behind it.
+     */
+    @Volatile
+    var sounds: SoundBank? = null
+
     init {
         holder.addCallback(this)
         isFocusable = true
@@ -194,7 +206,6 @@ class GameView @JvmOverloads constructor(
     /** Call from the host's `ON_RESUME`. */
     fun onResume() {
         resumed = true
-        audio.ensureLoaded()
         maybeStartRenderThread()
     }
 
@@ -209,27 +220,23 @@ class GameView @JvmOverloads constructor(
     }
 
     /**
-     * Releases the sound pool and the cached bitmaps. Called automatically when the view leaves its
-     * window; call it explicitly only if you keep the instance around after that.
+     * Releases the cached bitmaps. Called automatically when the view leaves its window; call it
+     * explicitly only if you keep the instance around after that.
+     *
+     * The sound bank is *not* touched: it belongs to the application and outlives every playfield.
      */
     fun release() {
         stopRenderThread()
         if (liveRenderThread() != null) {
             // Freeing the bitmaps under a thread that is still drawing would turn a stuck teardown
             // into a crash. Leaking them until the process goes away is the lesser evil.
-            Log.w(TAG, "render thread outlived its join; renderer and audio left for the GC")
+            Log.w(TAG, "render thread outlived its join; the renderer is left for the GC")
             return
         }
         renderer.release()
-        audio.release()
     }
 
     // --- view / surface lifecycle ----------------------------------------------------------------
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        audio.ensureLoaded()
-    }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
@@ -479,10 +486,15 @@ class GameView @JvmOverloads constructor(
             fieldHeight.toFloat(),
             Insets(insetLeft, insetTop + renderer.hudHeightPx, insetRight, insetBottom),
         )
+        // Faces and gradients are built here, as soon as the geometry is known and always well
+        // before the first target: nothing may be decoded or allocated at a target onset.
+        engine.targetRadiusPx?.let { renderer.prepareTarget(it) }
     }
 
     private fun beginSeries(now: Long) {
         renderer.setAttemptsTotal(engine.config.attemptsPerSeries)
+        // A no-op unless a resize changed the radius since refreshLayout(); the cost of being sure.
+        engine.targetRadiusPx?.let { renderer.prepareTarget(it) }
         renderer.onSeriesStarted()
         engine.start(now)
         seriesActive = true
@@ -529,7 +541,11 @@ class GameView @JvmOverloads constructor(
 
                 is GameEvent.Hit -> {
                     renderer.onHit(touchX, touchY, event.reactionTimeMs, now)
-                    if (settings.targetSounds) audio.play(GameSound.HIT, GameAudio.VOLUME_LOUD)
+                    // Two layers: the physical "bonk" and the monster complaining about it.
+                    sounds?.let {
+                        it.playRandom(Sound.HITS)
+                        it.playRandom(Sound.OUCHES)
+                    }
                     dirty = true
                     val completed = event.attemptIndex + 1
                     val reaction = event.reactionTimeMs
@@ -538,17 +554,29 @@ class GameView @JvmOverloads constructor(
 
                 is GameEvent.FalseStart -> {
                     renderer.onFalseStart(now)
+                    sounds?.let {
+                        it.play(Sound.FALSE_START)
+                        // One taunt, never two: the spoken line if voices are on and free, the
+                        // wordless cackle otherwise. Stacking them over the 900 ms toast would
+                        // still be ringing out when the next target appears.
+                        if (it.playVoice(Sound.VOICE_TOO_EARLY) == 0L) it.playRandom(Sound.LAUGHS)
+                    }
                     dirty = true
                     postToMain { listener?.onFalseStart() }
                 }
 
-                is GameEvent.Miss -> Unit // Legacy parity: an off-target tap is simply ignored.
+                is GameEvent.Miss -> {
+                    // Scoring still ignores it (legacy parity); it just is not silent any more.
+                    renderer.onMiss(touchX, touchY, now)
+                    sounds?.play(Sound.MISS)
+                    dirty = true
+                }
 
                 is GameEvent.SeriesFinished -> {
                     seriesActive = false
                     // The renderer keeps the last hit effect and a full HUD on screen; the host
                     // decides when to navigate away.
-                    if (settings.stoneSounds) audio.play(GameSound.FINISHED, GameAudio.VOLUME_LOUD)
+                    sounds?.play(Sound.SERIES_FINISH)
                     val result = event.result
                     dirty = true
                     postToMain {
@@ -560,11 +588,18 @@ class GameView @JvmOverloads constructor(
         }
     }
 
-    /** Sound and haptics for the target, fired the instant its frame has been posted. */
+    /**
+     * Sound and haptics for the target, fired the instant its frame has been posted.
+     *
+     * Unchanged in every way that matters: same call site, same point in the frame pipeline, same
+     * one-shot cost. The only difference is that the cue is now one of three interchangeable pops.
+     * `tool/audio` normalises the three with a single shared gain and makes their first 30 ms
+     * bit-identical, so which one is drawn cannot bias the measurement - and they are played at one
+     * volume here for the same reason. `vox_pop_hello_*` is deliberately unreachable from here.
+     */
     private fun fireTargetCues() {
-        val current = settings
-        if (current.targetSounds) audio.play(GameSound.TARGET, GameAudio.VOLUME_TARGET)
-        if (current.vibration) haptics.vibrate(Haptics.TARGET_PULSE_MS)
+        sounds?.playRandom(Sound.TARGET_POPS)
+        if (settings.vibration) haptics.vibrate(Haptics.TARGET_PULSE_MS)
     }
 
     // --- drawing ------------------------------------------------------------------------------------

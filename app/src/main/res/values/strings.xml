@@ -15,6 +15,8 @@
     <!-- Home -->
     <string name="home_tagline">Tap the red target the moment it appears.</string>
     <string name="home_start">Start</string>
+    <!-- Spoken when the home mascot is tapped; it is interactive, so it is not decorative. -->
+    <string name="home_mascot_description">Softosaurus mascot. Tap to say hello.</string>
     <string name="home_how_to_play">Ten targets appear one after another, each after a random
         pause. Tap each one as fast as you can. Your score is the average of the ten taps, with the
         slowest and fastest outliers dropped.</string>
@@ -108,9 +110,10 @@
     <string name="settings_title">Settings</string>
     <string name="settings_section_game">Game</string>
     <string name="settings_section_about">About</string>
-    <string name="use_target_sound">Target sounds</string>
-    <string name="use_stone_sounds">Stone sounds</string>
-    <string name="use_vibration">Vibration</string>
+    <string name="settings_sound_effects">Sound effects</string>
+    <string name="settings_music">Music</string>
+    <string name="settings_voice">Voice</string>
+    <string name="settings_vibration">Vibration</string>
     <string name="settings_privacy_options">Privacy options</string>
     <string name="settings_privacy_policy">Privacy policy</string>
     <string name="settings_rate">Rate the app</string>

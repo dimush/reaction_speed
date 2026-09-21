@@ -44,10 +44,29 @@ class GameSessionViewModel(
 
     private var consumed = false
 
+    private var fanfarePlayed = false
+
     /** Call before navigating to the game screen. */
     fun prepareNewSeries() {
         _finished.value = null
         consumed = false
+        fanfarePlayed = false
+    }
+
+    /**
+     * Claims the right to play the result fanfare, exactly once per finished series.
+     *
+     * The same problem as [consume], and the same answer: the guard lives on the `ViewModel`, which
+     * is scoped to the activity, so neither a recomposition, nor a rotation, nor coming back from
+     * the background, nor navigating to the result screen a second time can replay the jingle.
+     * A `LaunchedEffect` key could not promise that — it re-runs after a configuration change.
+     *
+     * @return true for the first caller after [prepareNewSeries], false for every later one
+     */
+    fun claimResultFanfare(): Boolean {
+        if (fanfarePlayed) return false
+        fanfarePlayed = true
+        return true
     }
 
     /**

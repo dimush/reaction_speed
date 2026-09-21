@@ -1,7 +1,9 @@
 package org.softosaurus.reactionspeed.game
 
+import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sin
 
 /**
  * Pure (Android-free) layout and animation math of [GameView].
@@ -58,6 +60,126 @@ object GameLayout {
     /** Scale of the target [elapsedMs] after it was shown; never below [POP_START_SCALE]. */
     fun popScale(elapsedMs: Long): Float =
         POP_START_SCALE + (1f - POP_START_SCALE) * easeOutCubic(progress(elapsedMs, POP_DURATION_MS))
+
+    // --- target flourish and idle life ----------------------------------------------------------
+
+    /**
+     * Duration of the "out of the grass" overshoot that follows the pop-in, ms.
+     *
+     * It begins only once [popScale] has reached 1, so the reveal itself is untouched.
+     */
+    const val FLOURISH_DURATION_MS = 260f
+
+    /** Peak of the overshoot, as a factor of the nominal radius. */
+    const val FLOURISH_AMPLITUDE = 0.12f
+
+    /** How long the idle wobble takes to reach full amplitude once the flourish is under way, ms. */
+    const val IDLE_RAMP_MS = 320f
+
+    /** Period of the breathing scale oscillation, ms. */
+    const val IDLE_BREATH_PERIOD_MS = 2_100f
+
+    /** Amplitude of the breathing, as a factor of the nominal radius. */
+    const val IDLE_BREATH_AMPLITUDE = 0.025f
+
+    /** Period of the idle tilt, ms — deliberately not a multiple of the breath, so it never loops. */
+    const val IDLE_TILT_PERIOD_MS = 1_630f
+
+    /** Amplitude of the idle tilt, degrees. */
+    const val IDLE_TILT_DEGREES = 3.2f
+
+    /**
+     * Total scale of a visible target: the pop-in, the overshoot flourish and the idle breathing.
+     *
+     * **This is the fairness-critical curve.** Two invariants hold for every `elapsedMs >= 0` and
+     * are asserted by `GameLayoutTest`:
+     * * the value never drops below [POP_START_SCALE], so the face is at least 70 % of its final
+     *   size on the very first frame and never shrinks below that afterwards;
+     * * the first [POP_DURATION_MS] are *exactly* [popScale] — the flourish and the wobble both
+     *   start at zero amplitude, so nothing about the reveal has changed.
+     *
+     * The garnish can only ever make the target bigger or wobble it a couple of percent once it is
+     * unmistakably there. It can never delay or weaken the appearance, which is the moment being
+     * measured.
+     */
+    fun targetScale(elapsedMs: Long): Float =
+        popScale(elapsedMs) * (1f + flourish(elapsedMs)) * (1f + breath(elapsedMs))
+
+    /** Idle tilt of a visible target in degrees; zero until the pop-in is over. */
+    fun targetTiltDegrees(elapsedMs: Long): Float {
+        val ramp = idleRamp(elapsedMs)
+        if (ramp <= 0f) return 0f
+        return IDLE_TILT_DEGREES * ramp * sin(TWO_PI * elapsedMs / IDLE_TILT_PERIOD_MS).toFloat()
+    }
+
+    /** Extra scale of the overshoot bump, 0 outside its window. */
+    private fun flourish(elapsedMs: Long): Float {
+        val start = POP_DURATION_MS.toLong()
+        if (elapsedMs <= start) return 0f
+        val p = progress(elapsedMs - start, FLOURISH_DURATION_MS)
+        if (p >= 1f) return 0f
+        // One clean half-sine: up to the peak and back to nothing, no discontinuity at either end.
+        return FLOURISH_AMPLITUDE * sin(PI * p).toFloat()
+    }
+
+    /** Breathing component of the scale, 0 until the idle animation has ramped in. */
+    private fun breath(elapsedMs: Long): Float {
+        val ramp = idleRamp(elapsedMs)
+        if (ramp <= 0f) return 0f
+        return IDLE_BREATH_AMPLITUDE * ramp * sin(TWO_PI * elapsedMs / IDLE_BREATH_PERIOD_MS).toFloat()
+    }
+
+    /** 0..1 fade-in of the idle animation, which starts only after the pop-in has finished. */
+    private fun idleRamp(elapsedMs: Long): Float {
+        val start = POP_DURATION_MS.toLong()
+        if (elapsedMs <= start) return 0f
+        return progress(elapsedMs - start, IDLE_RAMP_MS)
+    }
+
+    // --- hit effect -------------------------------------------------------------------------------
+
+    /** How far the face spins as it flies away, degrees over the whole effect. */
+    const val HIT_SPIN_DEGREES = 420f
+
+    /** Peak squash of the face at the moment of impact, as a factor. */
+    const val HIT_SQUASH = 0.42f
+
+    /** How far the struck face drifts upward over the effect, dp. */
+    const val HIT_DRIFT_DP = 26f
+
+    /** Horizontal scale of the struck face: squashed wide on impact, then shrinking away. */
+    fun hitScaleX(progress: Float): Float = hitDecay(progress) * (1f + HIT_SQUASH * hitSquash(progress))
+
+    /** Vertical scale of the struck face: flattened on impact, then shrinking away. */
+    fun hitScaleY(progress: Float): Float = hitDecay(progress) * (1f - HIT_SQUASH * hitSquash(progress))
+
+    /** Rotation of the struck face, degrees. */
+    fun hitSpinDegrees(progress: Float): Float = HIT_SPIN_DEGREES * easeOutCubic(progress)
+
+    /** Upwards drift (px, positive = up) of the struck face. */
+    fun hitDrift(density: Float, progress: Float): Float =
+        HIT_DRIFT_DP * density * easeOutCubic(progress)
+
+    /** 1 → 0 shrink of the struck face. */
+    private fun hitDecay(progress: Float): Float =
+        (1f - easeOutCubic(progress.coerceIn(0f, 1f))).coerceAtLeast(0f)
+
+    /** 1 → 0 squash envelope; front-loaded so the flattening is over in the first ~100 ms. */
+    private fun hitSquash(progress: Float): Float {
+        val inv = 1f - progress.coerceIn(0f, 1f)
+        val sq = inv * inv
+        return sq * sq
+    }
+
+    // --- particles ---------------------------------------------------------------------------------
+
+    /** Lifetime of one grass-dust or star particle, ms. Inside [HIT_EFFECT_DURATION_MS] by design. */
+    const val PARTICLE_LIFETIME_MS = 460f
+
+    /** Downward acceleration applied to particles, in dp per second squared. */
+    const val PARTICLE_GRAVITY_DP = 2_600f
+
+    private const val TWO_PI = 2.0 * PI
 
     /** Radius of the expanding hit ring. */
     fun hitRingRadius(targetRadiusPx: Float, progress: Float): Float =

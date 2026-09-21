@@ -47,9 +47,11 @@ interface ResultsRepository {
     /** Clears top-10, history and the best single reaction. */
     fun clearHistory()
 
-    fun setTargetSounds(enabled: Boolean)
+    fun setSoundEffects(enabled: Boolean)
 
-    fun setStoneSounds(enabled: Boolean)
+    fun setMusic(enabled: Boolean)
+
+    fun setVoice(enabled: Boolean)
 
     fun setVibration(enabled: Boolean)
 }
@@ -120,9 +122,11 @@ class SharedPreferencesResultsRepository(
         publish(board, _settings.value)
     }
 
-    override fun setTargetSounds(enabled: Boolean) = updateSettings { it.copy(targetSounds = enabled) }
+    override fun setSoundEffects(enabled: Boolean) = updateSettings { it.copy(soundEffects = enabled) }
 
-    override fun setStoneSounds(enabled: Boolean) = updateSettings { it.copy(stoneSounds = enabled) }
+    override fun setMusic(enabled: Boolean) = updateSettings { it.copy(music = enabled) }
+
+    override fun setVoice(enabled: Boolean) = updateSettings { it.copy(voice = enabled) }
 
     override fun setVibration(enabled: Boolean) = updateSettings { it.copy(vibration = enabled) }
 
@@ -130,11 +134,7 @@ class SharedPreferencesResultsRepository(
 
     private fun updateSettings(transform: (GameSettings) -> GameSettings) {
         val settings = transform(_settings.value)
-        prefs.edit {
-            putBoolean(KEY_TARGET_SOUNDS, settings.targetSounds)
-            putBoolean(KEY_STONE_SOUNDS, settings.stoneSounds)
-            putBoolean(KEY_VIBRATION, settings.vibration)
-        }
+        prefs.edit { writeSettings(settings) }
         _settings.value = settings
     }
 
@@ -160,10 +160,16 @@ class SharedPreferencesResultsRepository(
         seriesCount = prefs.getInt(KEY_SERIES_COUNT, 0).coerceAtLeast(0),
     ).withCredibleBestSingle()
 
-    private fun loadSettings() = GameSettings(
-        targetSounds = prefs.getBoolean(KEY_TARGET_SOUNDS, true),
-        stoneSounds = prefs.getBoolean(KEY_STONE_SOUNDS, true),
-        vibration = prefs.getBoolean(KEY_VIBRATION, true),
+    /**
+     * Reads the preferences through [SettingsCodec], so a file written by 4.0 — which had the two
+     * old sound switches and no music/voice keys — migrates in place instead of resetting.
+     */
+    private fun loadSettings(): GameSettings = SettingsCodec.read(
+        try {
+            prefs.all
+        } catch (e: Exception) {
+            emptyMap<String, Any?>()
+        },
     )
 
     private fun persist(board: ScoreBoard, settings: GameSettings, markMigrated: Boolean) {
@@ -172,11 +178,21 @@ class SharedPreferencesResultsRepository(
             putString(KEY_HISTORY, IntListCodec.encode(board.history))
             putInt(KEY_BEST_SINGLE, board.bestSingleMs ?: 0)
             putInt(KEY_SERIES_COUNT, board.seriesCount)
-            putBoolean(KEY_TARGET_SOUNDS, settings.targetSounds)
-            putBoolean(KEY_STONE_SOUNDS, settings.stoneSounds)
-            putBoolean(KEY_VIBRATION, settings.vibration)
+            writeSettings(settings)
             if (markMigrated) putBoolean(KEY_MIGRATED, true)
         }
+    }
+
+    /**
+     * Only the current keys are written. The 3.x/4.0 spellings stay in the file untouched: they are
+     * the fallback [SettingsCodec] reads when the new keys are missing, and rewriting them would
+     * make a downgrade lie about what the player chose.
+     */
+    private fun SharedPreferences.Editor.writeSettings(settings: GameSettings) {
+        putBoolean(SettingsCodec.KEY_SOUND_EFFECTS, settings.soundEffects)
+        putBoolean(SettingsCodec.KEY_MUSIC, settings.music)
+        putBoolean(SettingsCodec.KEY_VOICE, settings.voice)
+        putBoolean(SettingsCodec.KEY_VIBRATION, settings.vibration)
     }
 
     companion object {
@@ -187,9 +203,6 @@ class SharedPreferencesResultsRepository(
         const val KEY_HISTORY = "history"
         const val KEY_BEST_SINGLE = "best_single"
         const val KEY_SERIES_COUNT = "series_count"
-        const val KEY_TARGET_SOUNDS = "use_target_sounds"
-        const val KEY_STONE_SOUNDS = "use_stone_sounds"
-        const val KEY_VIBRATION = "use_vibration"
 
         /** One-shot flag guarding the legacy import. */
         const val KEY_MIGRATED = "migrated_legacy_v1"

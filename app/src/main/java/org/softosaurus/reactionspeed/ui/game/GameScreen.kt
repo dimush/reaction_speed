@@ -43,6 +43,7 @@ import org.softosaurus.reactionspeed.ads.adaptiveBannerHeightDp
 import org.softosaurus.reactionspeed.game.GameView
 import org.softosaurus.reactionspeed.game.SeriesResult
 import org.softosaurus.reactionspeed.ui.GameSessionViewModel
+import org.softosaurus.reactionspeed.ui.common.rememberAppAudio
 import org.softosaurus.reactionspeed.ui.common.rememberResults
 
 /**
@@ -69,6 +70,7 @@ fun GameScreen(
     val settings by results.settings.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val layoutDirection = LocalLayoutDirection.current
+    val audio = rememberAppAudio()
     val gameView = remember(context) { GameView(context) }
 
     // The listener is installed once and must never capture a stale navigation lambda.
@@ -78,6 +80,19 @@ fun GameScreen(
 
     /** Set by a system-caused abort; the overlay is the only way back into a series after one. */
     var awaitingTap by remember { mutableStateOf(false) }
+
+    // One sound bank for the whole app: the playfield borrows it and never owns or releases it.
+    DisposableEffect(gameView, audio) {
+        gameView.sounds = audio.sounds
+        onDispose { gameView.sounds = null }
+    }
+
+    // The game loop while the playfield is up, the menu loop again as soon as it is gone — which
+    // includes the hop to the result screen, so the fanfare lands over the menu theme.
+    DisposableEffect(audio) {
+        audio.playGameMusic()
+        onDispose { audio.playMenuMusic() }
+    }
 
     DisposableEffect(gameView) {
         gameView.listener = object : GameView.Listener {

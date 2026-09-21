@@ -55,17 +55,22 @@ fun SettingsScreen(onBack: () -> Unit) {
             ) {
                 SectionTitle(stringResource(R.string.settings_section_game))
                 SwitchRow(
-                    label = stringResource(R.string.use_target_sound),
-                    checked = settings.targetSounds,
-                    onCheckedChange = results::setTargetSounds,
+                    label = stringResource(R.string.settings_sound_effects),
+                    checked = settings.soundEffects,
+                    onCheckedChange = results::setSoundEffects,
                 )
                 SwitchRow(
-                    label = stringResource(R.string.use_stone_sounds),
-                    checked = settings.stoneSounds,
-                    onCheckedChange = results::setStoneSounds,
+                    label = stringResource(R.string.settings_music),
+                    checked = settings.music,
+                    onCheckedChange = results::setMusic,
                 )
                 SwitchRow(
-                    label = stringResource(R.string.use_vibration),
+                    label = stringResource(R.string.settings_voice),
+                    checked = settings.voice,
+                    onCheckedChange = results::setVoice,
+                )
+                SwitchRow(
+                    label = stringResource(R.string.settings_vibration),
                     checked = settings.vibration,
                     onCheckedChange = results::setVibration,
                 )

@@ -36,7 +36,12 @@ class LegacyPrefsTest {
 
         assertEquals(listOf(271, 288, 300), data.top10)
         assertEquals(listOf(340, 300, 288, 271), data.history)
-        assertEquals(GameSettings(targetSounds = true, stoneSounds = false, vibration = false), data.settings)
+        // One of the two legacy sound switches was still on, so effects survive the migration;
+     // music and voice are new and default on. See SettingsCodecTest for the full rule set.
+        assertEquals(
+            GameSettings(soundEffects = true, music = true, voice = true, vibration = false),
+            data.settings,
+        )
         assertTrue(data.hasData)
     }
 
@@ -121,7 +126,7 @@ class LegacyPrefsTest {
 
         assertFalse(data.hasData)
         assertTrue(data.settings.vibration)
-        assertTrue(data.settings.stoneSounds)
+        assertTrue(data.settings.soundEffects)
     }
 
     @Test
