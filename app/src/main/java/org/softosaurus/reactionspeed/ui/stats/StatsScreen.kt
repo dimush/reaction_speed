@@ -43,6 +43,7 @@ fun StatsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var confirmClear by rememberSaveable { mutableStateOf(false) }
+    var confirmRemoveLast by rememberSaveable { mutableStateOf(false) }
 
     BannerScaffold {
         Column(Modifier.fillMaxSize()) {
@@ -89,6 +90,15 @@ fun StatsScreen(
 
                 Spacer(Modifier.height(20.dp))
                 OutlinedButton(
+                    onClick = { confirmRemoveLast = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(stringResource(R.string.stats_remove_last))
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
                     onClick = { confirmClear = true },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -98,6 +108,27 @@ fun StatsScreen(
                 }
             }
         }
+    }
+
+    if (confirmRemoveLast) {
+        AlertDialog(
+            onDismissRequest = { confirmRemoveLast = false },
+            title = { Text(stringResource(R.string.stats_remove_last_title)) },
+            text = { Text(stringResource(R.string.stats_remove_last_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmRemoveLast = false
+                    viewModel.removeLastResult()
+                }) {
+                    Text(stringResource(R.string.stats_remove_last_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemoveLast = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 
     if (confirmClear) {

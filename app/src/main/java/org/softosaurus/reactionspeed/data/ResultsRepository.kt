@@ -41,6 +41,9 @@ interface ResultsRepository {
      */
     fun addResult(result: SeriesResult)
 
+    /** Removes the most recent series; see [ScoreBoard.withoutLastSeries]. */
+    fun removeLastResult()
+
     /** Clears top-10, history and the best single reaction. */
     fun clearHistory()
 
@@ -105,6 +108,12 @@ class SharedPreferencesResultsRepository(
         publish(board, _settings.value)
     }
 
+    override fun removeLastResult() {
+        val board = currentBoard().withoutLastSeries()
+        persist(board, _settings.value, markMigrated = false)
+        publish(board, _settings.value)
+    }
+
     override fun clearHistory() {
         val board = currentBoard().cleared()
         persist(board, _settings.value, markMigrated = false)
@@ -149,7 +158,7 @@ class SharedPreferencesResultsRepository(
         history = IntListCodec.decode(prefs.getString(KEY_HISTORY, null)),
         bestSingleMs = prefs.getInt(KEY_BEST_SINGLE, 0).takeIf { it > 0 },
         seriesCount = prefs.getInt(KEY_SERIES_COUNT, 0).coerceAtLeast(0),
-    )
+    ).withCredibleBestSingle()
 
     private fun loadSettings() = GameSettings(
         targetSounds = prefs.getBoolean(KEY_TARGET_SOUNDS, true),

@@ -90,6 +90,10 @@
     <string name="stats_trend_slower">Slowing down</string>
     <string name="stats_empty">No results yet. Finish a series and your history will appear here.</string>
     <string name="stats_chart_description">Line chart of your series results over time.</string>
+    <string name="stats_remove_last">Remove last series</string>
+    <string name="stats_remove_last_title">Remove the last series?</string>
+    <string name="stats_remove_last_message">The most recent result will be removed from your history and top 10. The best single reaction will be reset.</string>
+    <string name="stats_remove_last_confirm">Remove</string>
     <string name="stats_clear">Clear history</string>
     <string name="stats_clear_title">Clear history?</string>
     <string name="stats_clear_message">Your results, top 10 and best single reaction will be

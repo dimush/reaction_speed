@@ -90,6 +90,10 @@
     <string name="stats_trend_slower">Wird langsamer</string>
     <string name="stats_empty">Noch keine Ergebnisse. Schließe eine Serie ab, dann erscheint hier dein Verlauf.</string>
     <string name="stats_chart_description">Liniendiagramm deiner Serienergebnisse im Zeitverlauf.</string>
+    <string name="stats_remove_last">Letzte Serie entfernen</string>
+    <string name="stats_remove_last_title">Letzte Serie entfernen?</string>
+    <string name="stats_remove_last_message">Das letzte Ergebnis wird aus Verlauf und Top 10 entfernt. Die beste Einzelreaktion wird zurückgesetzt.</string>
+    <string name="stats_remove_last_confirm">Entfernen</string>
     <string name="stats_clear">Verlauf löschen</string>
     <string name="stats_clear_title">Verlauf löschen?</string>
     <string name="stats_clear_message">Deine Ergebnisse, die Top 10 und die beste Einzelreaktion

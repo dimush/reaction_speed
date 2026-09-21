@@ -88,6 +88,10 @@
     <string name="stats_trend_slower">Замедляется</string>
     <string name="stats_empty">Пока нет результатов. Завершите серию, и здесь появится история.</string>
     <string name="stats_chart_description">Линейный график результатов серий за всё время.</string>
+    <string name="stats_remove_last">Удалить последнюю серию</string>
+    <string name="stats_remove_last_title">Удалить последнюю серию?</string>
+    <string name="stats_remove_last_message">Последний результат будет удалён из истории и топ-10. Лучшая реакция будет сброшена.</string>
+    <string name="stats_remove_last_confirm">Удалить</string>
     <string name="stats_clear">Очистить историю</string>
     <string name="stats_clear_title">Очистить историю?</string>
     <string name="stats_clear_message">Результаты, топ-10 и лучший результат будут удалены с

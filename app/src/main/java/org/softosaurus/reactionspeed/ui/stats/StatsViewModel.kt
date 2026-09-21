@@ -45,6 +45,8 @@ class StatsViewModel(private val results: ResultsRepository) : ViewModel() {
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), StatsUiState())
 
+    fun removeLastResult() = results.removeLastResult()
+
     fun clearHistory() = results.clearHistory()
 
     companion object {

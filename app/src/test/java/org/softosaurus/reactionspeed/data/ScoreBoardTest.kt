@@ -106,4 +106,36 @@ class ScoreBoardTest {
         assertEquals(emptyList<Int>(), IntListCodec.decode(""))
         assertEquals(listOf(270), IntListCodec.decode("270,,oops,-3,0"))
     }
+
+    @Test
+    fun `best single slower than a migrated best average stays unknown`() {
+        val migrated = ScoreBoard(top10 = listOf(317, 334), history = listOf(334, 317), seriesCount = 2)
+        val after = migrated.withSeries(scoreMs = 4903, bestSingleMs = 3342)
+        assertNull(after.bestSingleMs)
+    }
+
+    @Test
+    fun `best single at least as fast as the best average is kept`() {
+        val migrated = ScoreBoard(top10 = listOf(317), history = listOf(317), seriesCount = 1)
+        val after = migrated.withSeries(scoreMs = 340, bestSingleMs = 290)
+        assertEquals(290, after.bestSingleMs)
+    }
+
+    @Test
+    fun `stored incredible best single is dropped on load`() {
+        val stored = ScoreBoard(top10 = listOf(317), history = listOf(317, 4903), bestSingleMs = 3342, seriesCount = 2)
+        assertNull(stored.withCredibleBestSingle().bestSingleMs)
+    }
+
+    @Test
+    fun `removing the last series undoes it in history and top10`() {
+        val board = ScoreBoard(top10 = listOf(317, 334), history = listOf(334, 317), seriesCount = 2)
+        val undone = board.withSeries(scoreMs = 4903, bestSingleMs = 3342).withoutLastSeries()
+        assertEquals(board, undone)
+    }
+
+    @Test
+    fun `removing from an empty board is a no-op`() {
+        assertEquals(ScoreBoard(), ScoreBoard().withoutLastSeries())
+    }
 }

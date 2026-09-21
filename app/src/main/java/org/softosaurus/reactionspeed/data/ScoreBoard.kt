@@ -10,7 +10,7 @@ package org.softosaurus.reactionspeed.data
  * @param history every series score in chronological order, oldest first
  * @param bestSingleMs fastest single reaction ever recorded, or `null` if unknown.
  *   Legacy 3.x stored only series means, so this stays `null` after migration until the player
- *   finishes a series in 4.0.
+ *   records a tap at least as fast as the migrated best average (see [withCredibleBestSingle]).
  * @param seriesCount lifetime number of finished series; used for incremental achievements and
  *   deliberately **not** reset by [cleared]
  */
@@ -40,6 +40,33 @@ data class ScoreBoard(
             history = newHistory,
             bestSingleMs = newBestSingle,
             seriesCount = seriesCount + 1,
+        ).withCredibleBestSingle()
+    }
+
+    /**
+     * Drops a [bestSingleMs] that is slower than the best series average.
+     *
+     * The fastest tap of a series is never slower than that series' mean, so a best single above
+     * `top10.first()` can only mean the real record was set in legacy 3.x, which never stored single
+     * taps. Showing "unknown" is honest; showing a number the player has provably beaten is not.
+     */
+    fun withCredibleBestSingle(): ScoreBoard {
+        val bestAverage = top10.firstOrNull() ?: return this
+        return if (bestSingleMs != null && bestSingleMs > bestAverage) copy(bestSingleMs = null) else this
+    }
+
+    /**
+     * Removes the most recent series (e.g. someone else played on the phone): drops it from
+     * [history], takes one matching entry out of [top10], and forgets [bestSingleMs], which may have
+     * come from that series and cannot be recomputed. No-op on an empty history.
+     */
+    fun withoutLastSeries(): ScoreBoard {
+        val last = history.lastOrNull() ?: return this
+        return copy(
+            top10 = top10 - last,
+            history = history.dropLast(1),
+            bestSingleMs = null,
+            seriesCount = (seriesCount - 1).coerceAtLeast(0),
         )
     }
 
