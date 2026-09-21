@@ -17,8 +17,8 @@
         случайной паузы. Коснитесь каждой как можно быстрее. Результат — среднее из десяти
         касаний без учёта самого быстрого и самого медленного.</string>
     <string name="home_best_average">Лучшее среднее</string>
-    <string name="home_best_single">Лучший результат</string>
-    <string name="home_series">Серия</string>
+    <string name="home_best_single">Лучшая реакция</string>
+    <string name="home_series">Серий</string>
     <string name="home_last_result">Последний результат</string>
     <string name="home_history_sparkline">Недавние результаты</string>
     <string name="home_stats">Статистика</string>

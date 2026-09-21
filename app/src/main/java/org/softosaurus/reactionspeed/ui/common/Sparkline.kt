@@ -13,8 +13,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /**
- * A tiny, axis-less trend line of the most recent scores. Faster reactions are drawn higher, so
- * "up" always means "better".
+ * A tiny, axis-less trend line of the most recent scores, oriented like the Statistics chart:
+ * milliseconds grow upwards, so a falling line means the player is getting faster.
  *
  * Fewer than two points draw nothing: a single dot would suggest a trend that does not exist.
  */
@@ -37,8 +37,8 @@ fun Sparkline(
         val usableHeight = (size.height - 2 * inset).coerceAtLeast(1f)
 
         fun pointAt(index: Int): Offset {
-            // Inverted: the fastest value sits at the top.
-            val normalised = (values[index] - min) / span
+            // Canvas y grows downwards, so the slowest value gets the smallest y.
+            val normalised = (max - values[index]) / span
             return Offset(index * stepX, inset + normalised * usableHeight)
         }
 

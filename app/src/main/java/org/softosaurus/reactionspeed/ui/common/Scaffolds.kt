@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import org.softosaurus.reactionspeed.ads.AdBanner
 
@@ -35,7 +37,10 @@ fun BannerScaffold(
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
     ) {
-        Box(Modifier.weight(1f)) { content() }
+        // background() alone leaves LocalContentColor at its black default, unreadable in dark theme.
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+            Box(Modifier.weight(1f)) { content() }
+        }
         Box(
             Modifier
                 .fillMaxWidth()
