@@ -1,5 +1,6 @@
 Version 4.0 ist eine komplette Neuentwicklung!
 
+• Lustige Monster-Ziele, Maskottchen, Musik und Stimmen
 • Neues Material-3-Design mit dunklem Theme
 • Weltweite Bestenlisten und Erfolge über Google Play Games
 • Statistikbildschirm mit Verlaufsdiagramm deiner Serien

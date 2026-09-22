@@ -1,5 +1,6 @@
 4.0 is a full rewrite!
 
+• Funny monster targets, mascots, music and voices
 • All-new Material 3 look, with dark theme
 • World leaderboards and achievements via Google Play Games
 • Statistics screen with a history chart of your past series

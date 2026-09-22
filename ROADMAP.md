@@ -61,7 +61,7 @@
 - [x] `PlayGamesManager` (PGS v2 SDK), отправка очков/достижений, кнопки «Лидерборды» / «Достижения».
 - [x] `games-ids.xml` с плейсхолдерами; graceful-off без id.
 - [x] Настройка в Play Console: проект Play Games 537830905161 (существовал с 3.x; app signing key = upload key → один OAuth-клиент), 2 доски, 10 достижений (черновики, видны тестерам). → `docs/PLAY_GAMES_SETUP.md`
-- [!] Опубликовать PGS-изменения (Play Games Services → Publishing) — перед production.
+- [x] PGS-изменения опубликованы 2026-09-22 (перед production).
 - [x] Реальные id в `games-ids.xml` → versionCode 14; на Pixel 9 вход, доска и экран достижений работают.
 
 ### Фаза 5 — Реклама и приватность (Sonnet)
@@ -73,7 +73,8 @@
 - [x] Smoke на эмуляторе `Medium_Phone_API_36.0`: запуск, серия, миграция данных поверх старой версии 3.0, скриншоты.
 - [x] Release AAB, подпись, `node tool/play_upload.mjs --track internal`.
 - [x] Release notes en/ru/de; обновить README.
-- [!] Подтверждение пользователя → promote в production.
+- [!] **AdMob UMP (GDPR-форма) — вернуться позже.** 2026-09-22 кнопка «Create a European regulations message» в AdMob → Privacy & messaging не работает ни у Claude, ни у пользователя: встроенный редактор падает с `Failed to retrieve dependencies of service $$XID:QQ9iad$$: Unexpected token ''', "[['pub-16652"... is not valid JSON` (серверный баг Google для pub-1665272374483034; с hl=de то же). План: повторить позже / другой браузер / поддержка AdMob. Настроить: только Reaction Speed, en/ru/de, Consent + Manage options + Do not consent, privacy URL из листинга; публикация — после «да». Код менять не нужно (UMP SDK уже встроен). Пока без формы в ЕЭС/UK/CH идёт только ограниченная реклама.
+- [x] Подтверждение пользователя → production: versionCode 14 загружен 2026-09-22 (full rollout, на ревью Google).
 
 ### Фаза 7 — Оформление: персонажи, анимация, звук, музыка (запрос пользователя 2026-09-21)
 Концепция: цели — смешные красные круглые «рожи»-монстрики, выскакивающие из травы (все красные и одного размера —
@@ -97,3 +98,4 @@
 - 2026-09-22 — Фаза 7 готова: рожи-цели, частицы, маскоты, конфетти, музыка (AudioTrack loop), голоса. Голоса: Chatterbox Multilingual (MIT) в tool/audio/.venv-tts → 23 из 24 реплик нейросетевые (voice_ready_de не прошёл отбор — SAPI). Размер цели возвращён к legacy (0.13 min side). **versionCode 13 загружен в internal**, AAB 11.7 МБ. Проверено на Pixel 9: обновление, история, музыка играет. По-прежнему ждёт пользователя: UMP-форма в AdMob, Play Games в консоли, «да» на production; оценка звука на слух.
 - 2026-09-22 — Play Games настроен через Chrome: тип приложения сменён на «Игра → Casual» (изменение листинга ждёт отправки на ревью в Publishing overview). Существующий PGS-проект 537830905161 переиспользован: доска «Best Time» → «Best average (10 taps)» (0 знаков, ms, tamper on), новая «Fastest single tap» (min 100), заглушки a1–a5 → First Series/Quick/Fast/Lightning/Superhuman, созданы Regular/Devoted/Veteran (incremental), Steady Hand, Flawless. versionCode 14 собран и проверен на Pixel 9 (вход, место №1, 10 достижений видны); загрузка в internal ждёт подтверждения пользователя.
 - 2026-09-22 — PGS: описания достижений укорочены до одной строки, добавлены переводы ru/de (проект, 10 достижений, 2 доски с единицей «мс»/«ms»), исправлена иконка Lightning. Проверено на Pixel 9: русский текст, «Первая серия» разблокирована, прогресс серий идёт.
+- 2026-09-22 — **Выпуск 4.0 в production** по «да» пользователя: PGS опубликован, versionCode 14 (release notes дополнены строкой про монстриков/маскотов/музыку/голоса) → production, full rollout; вместе с ним на ревью смена категории на Casual game и автоматический opt-in Google Play Games on PC. Play Console предупреждает об устаревшей транзитивной `androidx.fragment:1.1.0` (не блокирует) — в следующей версии форсировать ≥1.2.1. AdMob UMP-форма отложена (см. Фазу 6).
