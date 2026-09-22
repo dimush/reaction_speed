@@ -60,8 +60,9 @@
 ### Фаза 4 — Play Games Services (Opus — код; пользователь/Chrome — консоль)
 - [x] `PlayGamesManager` (PGS v2 SDK), отправка очков/достижений, кнопки «Лидерборды» / «Достижения».
 - [x] `games-ids.xml` с плейсхолдерами; graceful-off без id.
-- [!] Настройка в Play Console: проект Play Games, OAuth-клиенты (SHA-1 upload key + app signing key), 2 доски, достижения, публикация PGS-проекта. → `docs/PLAY_GAMES_SETUP.md`
-- [!] Вписать реальные id (после настройки консоли) → сборка versionCode 13 →, проверить на устройстве/эмуляторе с тестовым аккаунтом.
+- [x] Настройка в Play Console: проект Play Games 537830905161 (существовал с 3.x; app signing key = upload key → один OAuth-клиент), 2 доски, 10 достижений (черновики, видны тестерам). → `docs/PLAY_GAMES_SETUP.md`
+- [!] Опубликовать PGS-изменения (Play Games Services → Publishing) — перед production.
+- [x] Реальные id в `games-ids.xml` → versionCode 14; на Pixel 9 вход, доска и экран достижений работают.
 
 ### Фаза 5 — Реклама и приватность (Sonnet)
 - [x] play-services-ads (актуальная) + UMP consent flow, adaptive anchored banner, пункт «Privacy options» в Settings.
@@ -94,3 +95,4 @@
 - 2026-09-21 — Тест на реальном Pixel 9 (Android 17): обновление поверх установленной 3.1 прошло, данные (9 серий, топ 317 мс) мигрировали; баннер и single-AdView работают; падений нет. Найдено и исправлено: нечитаемый текст в тёмной теме (BannerScaffold не задавал LocalContentColor), подписи «Серий»/«Лучшая реакция», спарклайн приведён к ориентации графика статистики. **versionCode 12 загружен в internal.** Новое для пользователя: в AdMob не настроена форма согласия UMP (Privacy & messaging) — диалог GDPR не показывается, пока её нет.
 - 2026-09-21 — По замечанию пользователя: «лучшая реакция» медленнее лучшего среднего больше не показывается (инвариант в ScoreBoard), добавлено «Удалить последнюю серию». Начата Фаза 7 (оформление).
 - 2026-09-22 — Фаза 7 готова: рожи-цели, частицы, маскоты, конфетти, музыка (AudioTrack loop), голоса. Голоса: Chatterbox Multilingual (MIT) в tool/audio/.venv-tts → 23 из 24 реплик нейросетевые (voice_ready_de не прошёл отбор — SAPI). Размер цели возвращён к legacy (0.13 min side). **versionCode 13 загружен в internal**, AAB 11.7 МБ. Проверено на Pixel 9: обновление, история, музыка играет. По-прежнему ждёт пользователя: UMP-форма в AdMob, Play Games в консоли, «да» на production; оценка звука на слух.
+- 2026-09-22 — Play Games настроен через Chrome: тип приложения сменён на «Игра → Casual» (изменение листинга ждёт отправки на ревью в Publishing overview). Существующий PGS-проект 537830905161 переиспользован: доска «Best Time» → «Best average (10 taps)» (0 знаков, ms, tamper on), новая «Fastest single tap» (min 100), заглушки a1–a5 → First Series/Quick/Fast/Lightning/Superhuman, созданы Regular/Devoted/Veteran (incremental), Steady Hand, Flawless. versionCode 14 собран и проверен на Pixel 9 (вход, место №1, 10 достижений видны); загрузка в internal ждёт подтверждения пользователя.

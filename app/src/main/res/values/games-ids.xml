@@ -1,49 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Play Games Services resource ids.
+  Play Games Services resource ids (Play Console project 537830905161).
 
-  PLACEHOLDERS ONLY. This whole file is meant to be REPLACED wholesale by the export that
-  Play Console generates: Play Games Services -> Setup and management -> Configuration ->
-  "Get resources" (see docs/PLAY_GAMES_SETUP.md). That export uses exactly these resource
-  names, so nothing else in the app has to change once it is pasted in.
+  Values come from Play Console: Play Games Services -> Achievements/Leaderboards -> "Get resources".
+  NOTE: that export derives resource names from the display names (achievement_quick,
+  leaderboard_best_average_10_taps, app_id, ...). Do NOT paste it over this file wholesale; copy
+  the ids into the names below, which is what AchievementIds / PlayGamesManager / the manifest use.
 
-  An EMPTY game_services_project_id means "Play Games is not configured yet":
-  PlayGamesManager.isConfigured is then false and every Play Games call is a no-op
-  (PlayGamesSdk.initialize() is never called, no client is ever touched).
-  Individual leaderboard/achievement ids that are still empty are skipped the same way.
+  An EMPTY game_services_project_id means "Play Games is not configured":
+  PlayGamesManager.isConfigured is then false and every Play Games call is a no-op.
+  Individual leaderboard/achievement ids that are empty are skipped the same way.
 -->
 <resources>
 
     <!-- app_id -->
-    <string name="game_services_project_id" translatable="false"></string>
+    <string name="game_services_project_id" translatable="false">537830905161</string>
 
     <!-- package_name -->
     <string name="package_name" translatable="false">org.softosaurus.reactionspeed</string>
 
     <!-- leaderboard Best average (10 taps) -->
-    <string name="leaderboard_best_average" translatable="false"></string>
+    <string name="leaderboard_best_average" translatable="false">CgkIyarhydMPEAIQBg</string>
     <!-- leaderboard Fastest single tap -->
-    <string name="leaderboard_best_single" translatable="false"></string>
+    <string name="leaderboard_best_single" translatable="false">CgkIyarhydMPEAIQBw</string>
 
     <!-- achievement First Series -->
-    <string name="achievement_first_series" translatable="false"></string>
+    <string name="achievement_first_series" translatable="false">CgkIyarhydMPEAIQAQ</string>
     <!-- achievement Quick (< 350 ms) -->
-    <string name="achievement_under_350" translatable="false"></string>
+    <string name="achievement_under_350" translatable="false">CgkIyarhydMPEAIQAg</string>
     <!-- achievement Fast (< 300 ms) -->
-    <string name="achievement_under_300" translatable="false"></string>
+    <string name="achievement_under_300" translatable="false">CgkIyarhydMPEAIQAw</string>
     <!-- achievement Lightning (< 250 ms) -->
-    <string name="achievement_under_250" translatable="false"></string>
+    <string name="achievement_under_250" translatable="false">CgkIyarhydMPEAIQBA</string>
     <!-- achievement Superhuman (< 220 ms) -->
-    <string name="achievement_under_220" translatable="false"></string>
-    <!-- achievement Regular - 10 series -->
-    <string name="achievement_series_10" translatable="false"></string>
-    <!-- achievement Devoted - 50 series -->
-    <string name="achievement_series_50" translatable="false"></string>
-    <!-- achievement Veteran - 200 series -->
-    <string name="achievement_series_200" translatable="false"></string>
+    <string name="achievement_under_220" translatable="false">CgkIyarhydMPEAIQBQ</string>
+    <!-- achievement Regular - 10 series (incremental, 10 steps) -->
+    <string name="achievement_series_10" translatable="false">CgkIyarhydMPEAIQCA</string>
+    <!-- achievement Devoted - 50 series (incremental, 50 steps) -->
+    <string name="achievement_series_50" translatable="false">CgkIyarhydMPEAIQCQ</string>
+    <!-- achievement Veteran - 200 series (incremental, 200 steps) -->
+    <string name="achievement_series_200" translatable="false">CgkIyarhydMPEAIQCg</string>
     <!-- achievement Steady Hand -->
-    <string name="achievement_steady_hand" translatable="false"></string>
+    <string name="achievement_steady_hand" translatable="false">CgkIyarhydMPEAIQCw</string>
     <!-- achievement Flawless -->
-    <string name="achievement_flawless" translatable="false"></string>
+    <string name="achievement_flawless" translatable="false">CgkIyarhydMPEAIQDA</string>
 
 </resources>

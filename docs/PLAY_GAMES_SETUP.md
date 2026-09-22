@@ -1,5 +1,9 @@
 # Play Games Services — настройка в Play Console
 
+> **Сделано 2026-09-22.** Проект 537830905161; ключ App signing совпадает с upload key, поэтому OAuth-клиент один.
+> Экспорт «Get resources» называет ресурсы по display name (`achievement_quick`, `leaderboard_best_average_10_taps`, `app_id`) —
+> **не вставлять целиком**, а переносить id в имена из `games-ids.xml`.
+
 Разовая ручная настройка (≈15 минут). После неё нужно передать в проект **App ID** и **ID досок/достижений**
 (Play Console умеет экспортировать готовый `games-ids.xml` — кнопка «Get resources»).
 
