@@ -13,7 +13,7 @@ android {
         applicationId = "org.softosaurus.reactionspeed"
         minSdk = 24
         targetSdk = 36
-        versionCode = 12
+        versionCode = 13
         versionName = "4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

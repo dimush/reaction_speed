@@ -117,7 +117,14 @@ TAKES = [
     (2, 1.40, 0.25, 0.90, True,  1003),
     (0, 1.00, 0.45, 0.65, False, 1004),
     (2, 1.60, 0.20, 1.00, False, 1005),
+    # takes 5+ are extra rolls, only generated when --takes is raised.  Use them
+    # to re-roll a line the objective checks were unhappy with, e.g.
+    #   neural_voices.py generate --only voice_ready_de --takes 8
+    (0, 0.90, 0.40, 0.75, True,  2006),
+    (1, 1.20, 0.30, 0.85, False, 2007),
+    (0, 1.30, 0.28, 0.95, True,  2008),
 ]
+DEFAULT_TAKES = 5
 
 
 # --------------------------------------------------------------------------
@@ -353,55 +360,57 @@ def cmd_refs(model=None):
     return model
 
 
-def cmd_generate():
+def cmd_generate(n_takes=DEFAULT_TAKES, only=None):
     import torch
     np = _np()
     model = load_model()
     cmd_refs(model)
 
-    total = len(LINES) * len(LANGS) * len(TAKES)
+    n_takes = min(n_takes, len(TAKES))
+    pairs = [(l, g) for l in LINES for g in LANGS
+             if only is None or ("%s_%s" % (l, g)) in only or l in only or g in only]
+    total = len(pairs) * n_takes
     done = 0
     t_start = time.time()
-    for line in LINES:
+    for line, lang in pairs:
         char = CHARACTER[line][0]
         ref_path = os.path.join(REFS, REF_FOR[char] + ".wav")
         neu_path = os.path.join(REFS, "neutral.wav")
-        for lang in LANGS:
-            for ti, (vi, exag, cfg, temp, use_char, seed) in enumerate(TAKES):
-                done += 1
-                stem = "%s_%s_t%d" % (line, lang, ti)
-                wav_path = os.path.join(RAW, stem + ".wav")
-                meta_path = os.path.join(RAW, stem + ".json")
-                if os.path.exists(wav_path) and os.path.exists(meta_path):
-                    print("[%3d/%3d] skip %s" % (done, total, stem), flush=True)
-                    continue
-                text, syl, canon = VARIANTS[line][lang][vi]
-                prompt = ref_path if use_char else neu_path
-                torch.manual_seed(seed)
-                t0 = time.time()
-                try:
-                    wav = model.generate(text, language_id=lang,
-                                         audio_prompt_path=prompt,
-                                         exaggeration=exag, cfg_weight=cfg,
-                                         temperature=temp)
-                    x = wav.squeeze(0).cpu().numpy().astype(np.float64)
-                    err = None
-                except Exception as e:                    # noqa: BLE001
-                    x = np.zeros(1)
-                    err = "%s: %s" % (type(e).__name__, e)
-                dt = time.time() - t0
-                save_wav_f32(wav_path, x)
-                with open(meta_path, "w", encoding="utf-8") as fh:
-                    json.dump({"line": line, "lang": lang, "take": ti,
-                               "text": text, "syllables": syl, "canonical": canon,
-                               "exaggeration": exag, "cfg_weight": cfg,
-                               "temperature": temp, "ref": os.path.basename(prompt),
-                               "seed": seed, "gen_seconds": round(dt, 1),
-                               "audio_seconds": round(len(x) / SR, 2),
-                               "error": err}, fh, ensure_ascii=False, indent=1)
-                eta = (time.time() - t_start) / done * (total - done) / 60.0
-                print("[%3d/%3d] %-28s gen %5.1fs audio %5.2fs  ETA %.0f min %s"
-                      % (done, total, stem, dt, len(x) / SR, eta, err or ""), flush=True)
+        for ti, (vi, exag, cfg, temp, use_char, seed) in enumerate(TAKES[:n_takes]):
+            done += 1
+            stem = "%s_%s_t%d" % (line, lang, ti)
+            wav_path = os.path.join(RAW, stem + ".wav")
+            meta_path = os.path.join(RAW, stem + ".json")
+            if os.path.exists(wav_path) and os.path.exists(meta_path):
+                print("[%3d/%3d] skip %s" % (done, total, stem), flush=True)
+                continue
+            text, syl, canon = VARIANTS[line][lang][vi]
+            prompt = ref_path if use_char else neu_path
+            torch.manual_seed(seed)
+            t0 = time.time()
+            try:
+                wav = model.generate(text, language_id=lang,
+                                     audio_prompt_path=prompt,
+                                     exaggeration=exag, cfg_weight=cfg,
+                                     temperature=temp)
+                x = wav.squeeze(0).cpu().numpy().astype(np.float64)
+                err = None
+            except Exception as e:                    # noqa: BLE001
+                x = np.zeros(1)
+                err = "%s: %s" % (type(e).__name__, e)
+            dt = time.time() - t0
+            save_wav_f32(wav_path, x)
+            with open(meta_path, "w", encoding="utf-8") as fh:
+                json.dump({"line": line, "lang": lang, "take": ti,
+                           "text": text, "syllables": syl, "canonical": canon,
+                           "exaggeration": exag, "cfg_weight": cfg,
+                           "temperature": temp, "ref": os.path.basename(prompt),
+                           "seed": seed, "gen_seconds": round(dt, 1),
+                           "audio_seconds": round(len(x) / SR, 2),
+                           "error": err}, fh, ensure_ascii=False, indent=1)
+            eta = (time.time() - t_start) / done * (total - done) / 60.0
+            print("[%3d/%3d] %-28s gen %5.1fs audio %5.2fs  ETA %.0f min %s"
+                  % (done, total, stem, dt, len(x) / SR, eta, err or ""), flush=True)
     print("[generate] finished in %.1f min" % ((time.time() - t_start) / 60.0), flush=True)
 
 
@@ -487,8 +496,8 @@ def score_take(x, meta, asr):
         else:
             over = (dur - hi_dur) if dur > hi_dur else (lo_dur - dur)
             s -= min(6.0, 2.0 + 2.0 * over)
-        # no long internal silence
-        s -= min(3.0, 4.0 * max(0.0, m["max_gap"] - 0.30))
+        # no long internal silence (a trailing hallucinated grunt shows up here)
+        s -= min(4.0, 6.0 * max(0.0, m["max_gap"] - 0.22))
         # no clipping
         if m["clip_frac"] > 0.0005:
             s -= 2.0
@@ -502,10 +511,14 @@ def score_take(x, meta, asr):
         # intelligibility
         txt = asr.transcribe(yn, meta["lang"])
         if txt is not None:
-            sim = _similarity(txt, meta["text"])
+            # Compare against the canonical resource line as well as the prompt
+            # text: an elongated prompt ("Reeeady?!") is transcribed as the
+            # canonical word, and should not be penalised for that.
+            sim = max(_similarity(txt, meta["text"]),
+                      _similarity(txt, CANON[meta["line"]][meta["lang"]]))
             m["asr"] = txt
             m["asr_sim"] = round(sim, 3)
-            s += 2.5 * sim
+            s += 4.0 * sim
         m["score"] = round(s, 2)
         if best is None or s > best["score"]:
             best = m
@@ -586,6 +599,27 @@ def write_takes_md(results):
                    b["f0_range_st"],
                    ("%.2f" % b["asr_sim"]) if "asr_sim" in b else "n/a",
                    ("`%s`" % b["asr"].replace("|", "/")[:40]) if "asr" in b else "—"))
+    # lines whose best take the objective checks were least sure about
+    flags = []
+    for line in LINES:
+        for lang in LANGS:
+            r = results.get("%s_%s" % (line, lang))
+            if not r:
+                flags.append(("`%s_%s`" % (line, lang), "no usable take was produced"))
+                continue
+            b = r["best"]
+            why = []
+            if b.get("asr_sim", 1.0) < 0.90:
+                why.append("ASR similarity %.2f (heard `%s`)" % (b["asr_sim"], b.get("asr", "")))
+            if b["max_gap"] > 0.25:
+                why.append("internal silence %.2f s" % b["max_gap"])
+            if not b["dur_ok"]:
+                why.append("duration %.2f s outside %.2f–%.2f s" % (b["dur"], b["dur_lo"], b["dur_hi"]))
+            if b["nuclei_err"] >= 2:
+                why.append("%d syllable nuclei vs %d expected" % (b["nuclei"], b["syllables"]))
+            if why:
+                flags.append(("`%s_%s`" % (line, lang), "; ".join(why)))
+
     md = [
         "# Neural voice takes (Chatterbox Multilingual)",
         "",
@@ -605,16 +639,28 @@ def write_takes_md(results):
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ] + rows + [
         "",
+        "## Needs a human listen",
+        "",
+    ] + ([
+        "Nothing was flagged — every chosen take passed all objective checks.",
+    ] if not flags else [
+        "Nobody listened to these takes; selection was entirely objective. The lines below "
+        "tripped at least one check and are the ones worth spot-checking by ear first "
+        "(re-roll with `generate --only <line>_<lang> --takes 8`, then `select`).",
+        "",
+    ] + ["- %s — %s" % (n, w) for n, w in flags]) + [
+        "",
         "## Metric meanings",
         "",
         "- **duration**: plausible range is `0.16·syllables … 0.55·syllables + 0.85` s.",
-        "- **syllable nuclei**: energy-envelope peaks ≥ −22 dB below frame peak, ≥ 90 ms apart — "
-        "a proxy for \"the model said the right number of things\".",
+        "- **syllable nuclei**: peaks of the smoothed energy envelope within 18 dB of its maximum "
+        "and ≥ 130 ms apart — a proxy for \"the model said the right number of things\".",
         "- **max internal silence**: longest gap between active-speech segments after trimming; "
         "large values indicate a hallucinated second utterance.",
-        "- **F0 range**: 10th–90th percentile of the autocorrelation pitch track, in semitones — "
-        "expressiveness proxy (flat reads score near 0).",
-        "- **ASR similarity**: `difflib` ratio of a `whisper-small` transcript to the prompt text. "
+        "- **F0 range**: 20th–80th percentile of a median-filtered, octave-error-guarded "
+        "autocorrelation pitch track, in semitones — expressiveness proxy (flat reads score near 0).",
+        "- **ASR similarity**: best `difflib` ratio of a `whisper-small` transcript against the "
+        "prompt text *or* the canonical resource line. "
         "Used as a scoring signal only, never as a sole rejector (whisper-small is weak on "
         "one-word utterances, especially in Russian).",
         "",
@@ -629,12 +675,18 @@ def write_takes_md(results):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("command", choices=["refs", "generate", "select"])
-    ap.add_argument("--no-asr", action="store_true")
+    ap.add_argument("--no-asr", action="store_true",
+                    help="select: skip the whisper-small intelligibility score")
+    ap.add_argument("--takes", type=int, default=DEFAULT_TAKES,
+                    help="generate: how many take recipes to roll (max %d)" % len(TAKES))
+    ap.add_argument("--only", default=None,
+                    help="generate: comma-separated line, lang or line_lang filters")
     a = ap.parse_args()
     if a.command == "refs":
         cmd_refs()
     elif a.command == "generate":
-        cmd_generate()
+        cmd_generate(n_takes=a.takes,
+                     only=[s.strip() for s in a.only.split(",")] if a.only else None)
     else:
         cmd_select(use_asr=not a.no_asr)
 

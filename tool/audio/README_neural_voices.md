@@ -88,8 +88,19 @@ tool\audio\.venv-tts\Scripts\python.exe tool\audio\neural_voices.py select
 #    add --no-asr to skip the whisper-small intelligibility score
 ```
 
-To re-roll a single line, delete its take files from
-`tool/audio/recordings/_alternates/raw/` and re-run `generate`, then `select`.
+To re-roll a line the objective checks were unhappy about (see the
+"Needs a human listen" section of `TAKES.md`), roll the three extra take
+recipes for just that line and re-select:
+
+```powershell
+tool\audio\.venv-tts\Scripts\python.exe tool\audio\neural_voices.py generate `
+    --only voice_ready_de --takes 8
+tool\audio\.venv-tts\Scripts\python.exe tool\audio\neural_voices.py select
+```
+
+`--only` accepts a comma-separated list of `line_lang`, `line` or `lang`.
+To re-roll with fresh randomness instead, delete that line's files from
+`tool/audio/recordings/_alternates/raw/` and re-run `generate`.
 
 ## Output contract
 
@@ -140,9 +151,9 @@ be no way to verify the cut landed correctly without listening.
 | | |
 | --- | --- |
 | Model load | ~150 s (first run also downloads ~3 GB) |
-| Per take | ~35–60 s typical; a runaway generation can reach ~160 s |
-| Full 120-take sweep | ~90–110 min |
-| `select` pass (incl. whisper-small on every take) | ~10–20 min |
+| Per take | ~35–60 s typical; a runaway generation reached ~177 s |
+| Full 120-take sweep | **116.5 min** (measured) |
+| `select` pass (incl. whisper-small on every take and trim candidate) | ~14 min |
 
 Run `generate` in the background; it prints per-take progress and an ETA, and
 it is resumable, so an interruption costs at most one take.
