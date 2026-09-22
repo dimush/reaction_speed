@@ -14,22 +14,37 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-BASE_PATH = os.path.join(ROOT, "art", "raw", "badge_base_crop.png")
+BASE_PATH = os.path.join(ROOT, "art", "raw", "badge_base.png")
 OUT_DIR = os.path.join(ROOT, "store", "achievements")
 FONT_PATH = "C:/Windows/Fonts/impact.ttf"
 SIZE = 512
+# The big blank disc in the top-left of the SDXL grid, measured on the image (x 4..272,
+# y 10..289 -- slightly oval). An elliptical mask cuts it cleanly out of the neighbouring
+# badges, which the old rectangular badge_base_crop.png did not: it was off-centre, clipped
+# at the right/bottom and had a neighbour badge bleeding in.
+DISC_CX, DISC_CY, DISC_RX, DISC_RY = 138.0, 149.5, 131.0, 137.0
+GLYPH_OUTLINE = (60, 30, 0, 255)  # dark rim so white glyphs stay visible on silver
+MARGIN_FRAC = 0.04  # breathing room so the rim never touches the icon edge
 
 
 def load_badge_rgba():
-    im = Image.open(BASE_PATH).convert("RGB")
-    im = im.resize((SIZE, SIZE), Image.LANCZOS)
-    # Background is near-white; make it transparent via simple threshold
-    # (safe here: the badge has no white in its own gold/brown palette).
-    arr = np.asarray(im).astype(np.int16)
-    dist = np.abs(arr - 255).sum(axis=2)
-    alpha = np.where(dist < 40, 0, 255).astype(np.uint8)
-    rgba = im.convert("RGBA")
-    rgba.putalpha(Image.fromarray(alpha, mode="L"))
+    src = Image.open(BASE_PATH).convert("RGB")
+    scale = 4  # supersampled mask for an anti-aliased rim
+    mask = Image.new("L", (src.width * scale, src.height * scale), 0)
+    ImageDraw.Draw(mask).ellipse(
+        ((DISC_CX - DISC_RX) * scale, (DISC_CY - DISC_RY) * scale,
+         (DISC_CX + DISC_RX) * scale, (DISC_CY + DISC_RY) * scale), fill=255)
+    mask = mask.resize(src.size, Image.LANCZOS)
+    disc = src.convert("RGBA")
+    disc.putalpha(mask)
+    box = (round(DISC_CX - DISC_RX), round(DISC_CY - DISC_RY),
+           round(DISC_CX + DISC_RX), round(DISC_CY + DISC_RY))
+    disc = disc.crop(box)
+    inner = round(SIZE * (1 - 2 * MARGIN_FRAC))
+    disc = disc.resize((inner, inner), Image.LANCZOS)
+    rgba = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    off = (SIZE - inner) // 2
+    rgba.paste(disc, (off, off), disc)
     return rgba
 
 
@@ -59,7 +74,7 @@ def draw_star(draw, cx, cy, r_outer, color, points=5, rotation=-90, inner_ratio=
         rad = r_outer if i % 2 == 0 else r_inner
         a = angle + i * step
         pts.append((cx + rad * math.cos(a), cy + rad * math.sin(a)))
-    draw.polygon(pts, fill=color)
+    draw.polygon(pts, fill=color, outline=GLYPH_OUTLINE, width=6)
 
 
 def draw_lightning(draw, cx, cy, scale, color):
@@ -72,7 +87,7 @@ def draw_lightning(draw, cx, cy, scale, color):
         (cx + 0.02 * scale, cy + 0.05 * scale),
         (cx - 0.25 * scale, cy + 0.05 * scale),
     ]
-    draw.polygon(pts, fill=color)
+    draw.polygon(pts, fill=color, outline=GLYPH_OUTLINE, width=6)
 
 
 def draw_check(draw, cx, cy, scale, color, width_frac=0.09):
@@ -173,7 +188,7 @@ def main():
                            number=number, number_color=(80, 40, 0, 255), number_cy=0.66)
         elif number and glyph_fn in (draw_star,):
             out = compose(badge, glyph_fn=glyph_fn, glyph_color=(255, 255, 255, 200),
-                           glyph_scale=0.5, glyph_cy=0.46,
+                           glyph_scale=0.36, glyph_cy=0.47,
                            number=number, number_color=(80, 40, 0, 255), number_cy=0.5)
         elif number:  # flag / first series
             out = compose(badge, glyph_fn=glyph_fn, glyph_color=(255, 255, 255, 255),
